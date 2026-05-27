@@ -13,9 +13,16 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var manager = CLLocationManager()
     
     @Published var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: -7.2504, longitude: 112.7688), //Default Location
-        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        center: CLLocationCoordinate2D(latitude: -7.2504, longitude: 112.7688),
+        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
     )
+    
+    @Published var waypoints: [MapWaypoint] = [
+        MapWaypoint(name: "Apple Infinite Loop", coordinate: CLLocationCoordinate2D(latitude: 37.3308, longitude: -122.0315), rewardPoints: 50),
+        MapWaypoint(name: "De Anza Blvd", coordinate: CLLocationCoordinate2D(latitude: 37.3325, longitude: -122.0305), rewardPoints: 100),
+        MapWaypoint(name: "Campus Gate", coordinate: CLLocationCoordinate2D(latitude: -7.2515, longitude: 112.7690), rewardPoints: 50),
+        MapWaypoint(name: "Coffee Shop", coordinate: CLLocationCoordinate2D(latitude: -7.2490, longitude: 112.7680), rewardPoints: 100)
+    ]
     
     override init() {
         super.init()
@@ -33,6 +40,26 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                 center: location.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
             )
+            
+            self.checkWaypointArrival(userLocation: location)
+        }
+    }
+    
+    private func checkWaypointArrival(userLocation: CLLocation) {
+        let captureRadiusInMeters: CLLocationDistance = 50.0
+        
+        for index in waypoints.indices {
+            let waypoint = waypoints[index]
+            
+            if waypoint.isClaimed { continue }
+            
+            let poiLocation = CLLocation(latitude: waypoint.coordinate.latitude, longitude: waypoint.coordinate.longitude)
+            let distance = userLocation.distance(from: poiLocation)
+            if distance <= captureRadiusInMeters {
+                waypoints[index].isClaimed = true
+                print("🎉 Arrived at \(waypoint.name)! Awarded \(waypoint.rewardPoints) points.")
+                //Connect to model and view model
+            }
         }
     }
 }

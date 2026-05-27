@@ -14,10 +14,32 @@ struct MapHUDView: View {
     var body: some View {
         ZStack {
             // Map Initialization
-            Map(coordinateRegion: $locationManager.region, showsUserLocation: true)
-                .ignoresSafeArea()
-                .tint(.mint)
-            
+            Map(coordinateRegion: $locationManager.region, showsUserLocation: true, annotationItems: locationManager.waypoints) { waypoint in
+                MapAnnotation(coordinate: waypoint.coordinate) {
+                    if !waypoint.isClaimed {
+                        VStack {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.mint.opacity(0.3))
+                                    .frame(width: 40, height: 40)
+                                
+                                Circle()
+                                    .fill(Color.mint)
+                                    .frame(width: 16, height: 16)
+                                    .shadow(radius: 3)
+                            }
+                            Text(waypoint.name)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .padding(4)
+                                .background(.thinMaterial)
+                                .cornerRadius(8)
+                        }
+                    }
+                }
+            }
+            .ignoresSafeArea()
+            .tint(.mint)
             VStack {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
