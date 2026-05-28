@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 @MainActor
-class SocialViewModel: ObservableObject {
+class FriendViewModel: ObservableObject {
     @Published var currentUser: User
     @Published var friends: [User] = []
     @Published var pendingRequests: [User] = []

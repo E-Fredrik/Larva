@@ -72,5 +72,11 @@ struct WorkoutControlPanel: View {
 }
 
 #Preview {
-    WorkoutControlPanel()
+    WorkoutControlPanel(
+        isRecording: true,
+        steps: 4500,
+        distance: "4km",
+        pace: "3:50",
+        onToggleAction: {}
+    )
 }

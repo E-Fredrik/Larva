@@ -21,7 +21,7 @@ class StepTrackerViewModel: ObservableObject {
         self.session = WorkoutData(
             steps: 0,
             distanceInMeters: 0.0,
-            cucurrentPace: 0.0,
+            currentPace: 0.0,
             startDate: Date(),
             isRunning: false
         )
@@ -29,7 +29,8 @@ class StepTrackerViewModel: ObservableObject {
 
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
-
+        
+        //Finds the start of the day so that it can start tracking for the current day
         let midnight = Calendar.current.startOfDay(for: Date())
 
         passivePedometer.startUpdates(from: midnight) {
@@ -43,7 +44,7 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     func toggleWorkoutSession() {
-        if session.isRecording {
+        if session.isRunning {
             stopActiveWorkout()
         } else {
             startActiveWorkout()
@@ -53,15 +54,15 @@ class StepTrackerViewModel: ObservableObject {
     private func startActiveWorkout() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        session = WorkoutSession(
+        session = WorkoutData(
             steps: 0,
             distanceInMeters: 0.0,
-            paceInSecondsPerMeter: 0.0,
-            startTime: Date(),
-            isRecording: true
+            currentPace: 0.0,
+            startDate: Date(),
+            isRunning: true
         )
 
-        activePedometer.startUpdates(from: session.startTime) {
+        activePedometer.startUpdates(from: session.startDate) {
             [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
@@ -69,7 +70,7 @@ class StepTrackerViewModel: ObservableObject {
                 self.session.steps = data.numberOfSteps.intValue
                 self.session.distanceInMeters =
                     data.distance?.doubleValue ?? 0.0
-                self.session.paceInSecondsPerMeter =
+                self.session.currentPace =
                     data.currentPace?.doubleValue ?? 0.0
             }
         }
@@ -77,7 +78,7 @@ class StepTrackerViewModel: ObservableObject {
 
     private func stopActiveWorkout() {
         activePedometer.stopUpdates()
-        session.isRecording = false
+        session.isRunning = false
 
         let midnight = Calendar.current.startOfDay(for: Date())
         passivePedometer.queryPedometerData(from: midnight, to: Date()) {
@@ -92,8 +93,8 @@ class StepTrackerViewModel: ObservableObject {
 
     //Formats pace since apple natively saves it in seconds per meter, we want to display it as minutes per kilometer
     var formattedPace: String {
-        guard session.paceInSecondsPerMeter > 0 else { return "0:00" }
-        let secondsPerKm = session.paceInSecondsPerMeter * 1000
+        guard session.currentPace > 0 else { return "0:00" }
+        let secondsPerKm = session.currentPace * 1000
         let minutes = Int(secondsPerKm) / 60
         let seconds = Int(secondsPerKm) % 60
         return String(format: "%d:%02d", minutes, seconds)
