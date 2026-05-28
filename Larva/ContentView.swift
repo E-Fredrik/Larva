@@ -15,15 +15,31 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authViewModel.userSession != nil {
-                // 2. Wait for the custom User object to be fetched from Firestore
                 if let currentUser = authViewModel.currentUser {
                     AuthenticatedRootView(user: currentUser, sizeClass: horizontalSizeClass)
                         .transition(.opacity)
                 } else {
                     // Show a brief loading spinner while fetching the user's stats
-                    ProgressView("Loading Profile...")
-                        .tint(.mint)
-                        .transition(.opacity)
+                    VStack(spacing: 24) {
+                        ProgressView("Loading Profile...")
+                            .tint(.mint)
+                            .scaleEffect(1.2)
+                        
+                        // FALLBACK: Escapes the infinite loading trap if the DB fetch fails
+                        Button(action: {
+                            authViewModel.signOut()
+                        }) {
+                            Text("Stuck? Force Sign Out")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                    }
+                    .transition(.opacity)
                 }
             } else {
                 // 3. Show Firebase Login/Signup if not authenticated
