@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct FriendsView: View {
-    // Assuming you inject this from a parent view or environment
     @StateObject var viewModel = FriendViewModel(currentUser: User(id: "USER-123", username: "Dave", points: 2500, currentStreak: 7, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
     
     @State private var selectedTab = 0
@@ -27,29 +26,14 @@ struct FriendsView: View {
                     
                     List {
                         if selectedTab == 0 {
-                            // Leaderboard View
-                            ForEach(
-                                Array(viewModel.leaderboard.enumerated()),
-                                id: \.element.id
-                            ) {
- index,
-                                user in
-                                NavigationLink(
-                                    destination: FriendProfileView(user: user)
-                                ) {
-                                    LeaderboardRow(
-                                        rank: index + 1,
-                                        user: user,
-                                        isCurrentUser: user.id == viewModel.currentUser.id
-                                    )
+                            ForEach(Array(viewModel.leaderboard.enumerated()), id: \.element.id) { index, user in
+                                NavigationLink(destination: FriendProfileView(user: user)) {
+                                    LeaderboardRow(rank: index + 1, user: user, isCurrentUser: user.id == viewModel.currentUser.id)
                                 }
                             }
                         } else {
-                            // Friends List View
                             ForEach(viewModel.friends) { friend in
-                                NavigationLink(
-                                    destination: FriendProfileView(user: friend)
-                                ) {
+                                NavigationLink(destination: FriendProfileView(user: friend)) {
                                     FriendRow(user: friend)
                                 }
                             }

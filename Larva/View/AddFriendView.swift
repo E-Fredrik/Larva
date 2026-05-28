@@ -16,7 +16,6 @@ struct AddFriendView: View {
         if #available(iOS 16.0, *) {
             NavigationStack {
                 VStack(spacing: 24) {
-                    // Search Section
                     HStack {
                         TextField("Enter Friend Code", text: $friendCode)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -32,7 +31,6 @@ struct AddFriendView: View {
                     }
                     .padding()
                     
-                    // Pending Requests Section
                     if !viewModel.pendingRequests.isEmpty {
                         VStack(alignment: .leading) {
                             Text("Pending Requests")
@@ -45,31 +43,19 @@ struct AddFriendView: View {
                                         Text(request.username)
                                             .font(.subheadline)
                                         Spacer()
-                                        Button(
-                                            action: { viewModel.acceptRequest(
-                                                from: request
-                                            )
-                                            }) {
-                                                Image(
-                                                    systemName: "checkmark.circle.fill"
-                                                )
+                                        Button(action: { viewModel.acceptRequest(from: request) }) {
+                                            Image(systemName: "checkmark.circle.fill")
                                                 .foregroundColor(.mint)
                                                 .font(.title2)
-                                            }
-                                            .buttonStyle(.plain)
+                                        }
+                                        .buttonStyle(.plain)
                                         
-                                        Button(
-                                            action: { viewModel.declineRequest(
-                                                from: request
-                                            )
-                                            }) {
-                                                Image(
-                                                    systemName: "xmark.circle.fill"
-                                                )
+                                        Button(action: { viewModel.declineRequest(from: request) }) {
+                                            Image(systemName: "xmark.circle.fill")
                                                 .foregroundColor(.red)
                                                 .font(.title2)
-                                            }
-                                            .buttonStyle(.plain)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
@@ -77,21 +63,18 @@ struct AddFriendView: View {
                         }
                     }
                     
-                    Spacer() // Pushes the following text firmly to the bottom
+                    Spacer()
                     
-                    // Instructional Text anchored at the bottom
-                    Text(
-                        "Share your unique code with friends so they can add you to their leaderboard."
-                    )
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.thinMaterial)
-                    .cornerRadius(16)
-                    .padding(.horizontal)
-                    .padding(.bottom, 24)
+                    Text("Share your unique code with friends so they can add you to their leaderboard.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.thinMaterial)
+                        .cornerRadius(16)
+                        .padding(.horizontal)
+                        .padding(.bottom, 24)
                 }
                 .navigationTitle("Add Friend")
                 .navigationBarTitleDisplayMode(.inline)

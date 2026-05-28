@@ -8,28 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject var friendVM = FriendViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
+    @StateObject var questVM = QuestViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
+    @StateObject var shopVM = ShopViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
     
+    //Detects if it's running on iPhone, iPad, or Apple Watch
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     var body: some View {
-        Group {
-            if authViewModel.userSession != nil {
-                TabView {
-                    MapHUDView()
-                        .tabItem {
-                            Label("Map", systemImage: "map.fill")
-                        }
-                    
-                    FriendsView()
-                        .tabItem {
-                            Label("Social", systemImage: "person.2.fill")
-                        }
-                }
-                .tint(.mint)
-            } else {
-                LoginView()
+        Group{
+            if horizontalSizeClass == .regular {
+                SidebarNavigationView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
             }
-        }
-        .environmentObject(authViewModel)
+            else {
+                MainTabView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
+            }
+        }.tint(.mint)
     }
 }
 
