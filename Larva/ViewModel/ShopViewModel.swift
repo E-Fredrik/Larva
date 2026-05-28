@@ -8,11 +8,14 @@
 import Foundation
 import SwiftUI
 import Combine
+import FirebaseDatabase
 
 @MainActor
 class ShopViewModel: ObservableObject {
     @Published var currentUser: User
     @Published var storeItems: [ShopItem] = []
+    
+    private let dbRef = Database.database().reference()
     
     init(currentUser: User) {
         self.currentUser = currentUser
@@ -20,7 +23,6 @@ class ShopViewModel: ObservableObject {
     }
     
     private func loadStoreItems() {
-        // Updated to use your exact parameter names: 'cost' and 'itemType'
         storeItems = [
             ShopItem(id: "theme_midnight", name: "Midnight Mint", description: "A dark mode map with glowing mint accents.", cost: 500, itemType: .mapTheme),
             ShopItem(id: "theme_surabaya", name: "Surabaya Heat", description: "Warm pastel orange and yellow map routes.", cost: 800, itemType: .mapTheme),
@@ -30,21 +32,25 @@ class ShopViewModel: ObservableObject {
     }
     
     func purchase(item: ShopItem) {
-        //Checks if they already own it
         guard !currentUser.unlockedCustomizations.contains(item.id) else { return }
-        
-        //Checks if they have enough points
         guard currentUser.points >= item.cost else {
             print("Not enough points to buy \(item.name)!")
             return
         }
         
-        //Process the transaction
+        //Process local transaction
         currentUser.points -= item.cost
         currentUser.unlockedCustomizations.append(item.id)
-        print("Successfully purchased \(item.name)! Remaining balance: \(currentUser.points)")
         
-        //Firebase: Sync updated points and unlocked items array here
+        //Sync to Firebase Realtime Database
+        Task {
+            do {
+                try dbRef.child("users").child(currentUser.id).setValue(from: currentUser)
+                print("Successfully purchased \(item.name)! Synced to Firebase.")
+            } catch {
+                print("Error syncing purchase to database: \(error.localizedDescription)")
+            }
+        }
     }
     
     func owns(item: ShopItem) -> Bool {

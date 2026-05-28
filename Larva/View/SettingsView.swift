@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: ProfileViewModel
+    
     @AppStorage("isDarkMode") private var isDarkMode = true
     
     var body: some View {
@@ -52,5 +53,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(viewModel: ProfileViewModel(currentUser: User(id: "1", username: "Kenjo", points: 100, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
+    SettingsView(viewModel: ProfileViewModel(currentUser: User(id: "1", username: "Kenjo", friendCode: "ROAM-0F0K", points: 100, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
 }

@@ -12,6 +12,7 @@ struct FriendsView: View {
         currentUser: User(
             id: "USER-123",
             username: "Dave",
+            friendCode: "ROAM-0F0K",
             points: 2500,
             currentStreak: 7,
             dailyStepTarget: 5000,

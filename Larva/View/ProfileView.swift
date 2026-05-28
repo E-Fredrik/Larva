@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @StateObject var viewModel = ProfileViewModel(
-        currentUser: User(id: "USER-123", username: "Maya Chen", points: 2500, currentStreak: 89, friendList: ["user2", "user3"], pendingFriendRequests: [], unlockedCustomizations: ["theme_midnight", "border_gold"])
+        currentUser: User(id: "USER-123", username: "Maya Chen", points: 2500, currentStreak: 89, dailyStepTarget: 10000, friendList: ["user2", "user3"], pendingFriendRequests: [], unlockedCustomizations: ["theme_midnight", "border_gold"])
     )
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass

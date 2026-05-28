@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import FirebaseAuth
 
 class ProfileViewModel: ObservableObject {
     @Published var currentUser: User
@@ -28,6 +29,11 @@ class ProfileViewModel: ObservableObject {
     }
     
     func logout(){
-        print("Logging out user \(currentUser.username)...")
+        do{
+            try Auth.auth().signOut()
+            print("Successfully logged out \(currentUser.username)")
+        } catch{
+            print("Error logging out: \(error.localizedDescription)")
+        }
     }
 }

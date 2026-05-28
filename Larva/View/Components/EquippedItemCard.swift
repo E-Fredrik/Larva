@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EquippedItemCard: View {
     let item: ShopItem
+    
     private var iconName: String {
         switch item.itemType {
         case .mapTheme: return "map.fill"
@@ -34,7 +35,6 @@ struct EquippedItemCard: View {
                 .fontWeight(.semibold)
                 .lineLimit(1)
             
-            // Uses your exact enum and capitalizes the raw string (e.g., "Maptheme" or "Avatarborder")
             Text(item.itemType.rawValue.capitalized)
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
