@@ -7,7 +7,6 @@
 
 import Foundation
 import CoreLocation
-import Combine
 import MapKit
 import Combine
 
@@ -15,10 +14,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     private var manager = CLLocationManager()
     
-    @Published var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: -7.2504, longitude: 112.7688),
-        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-    )
+    // Track raw location so we know where the user is without forcing the map to snap
+    @Published var userLocation: CLLocation?
+    
+    // Navigation Data
+    @Published var route: MKRoute?
+    @Published var destinationCoordinate: CLLocationCoordinate2D?
     
     @Published var waypoints: [MapWaypoint] = [
         MapWaypoint(name: "Apple Infinite Loop", coordinate: CLLocationCoordinate2D(latitude: 37.3308, longitude: -122.0315), rewardPoints: 50),
@@ -39,13 +40,38 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let location = locations.last else { return }
         
         DispatchQueue.main.async {
-            self.region = MKCoordinateRegion(
-                center: location.coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-            )
-            
+            // We just store the location. We DON'T aggressively overwrite the map region here anymore.
+            self.userLocation = location
             self.checkWaypointArrival(userLocation: location)
         }
+    }
+    
+    // MARK: - Routing Logic
+    func calculateWalkingRoute(to destination: CLLocationCoordinate2D) {
+        guard let userLocation = userLocation else { return }
+        
+        let request = MKDirections.Request()
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: userLocation.coordinate))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
+        request.transportType = .walking // Set to walking routes
+        
+        let directions = MKDirections(request: request)
+        directions.calculate { [weak self] response, error in
+            guard let route = response?.routes.first else {
+                print("Failed to get route: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self?.route = route
+                self?.destinationCoordinate = destination
+            }
+        }
+    }
+    
+    func clearRoute() {
+        self.route = nil
+        self.destinationCoordinate = nil
     }
     
     private func checkWaypointArrival(userLocation: CLLocation) {
@@ -61,9 +87,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             if distance <= captureRadiusInMeters {
                 waypoints[index].isClaimed = true
                 print("🎉 Arrived at \(waypoint.name)! Awarded \(waypoint.rewardPoints) points.")
-                //Connect to model and view model
+                // Connect to model and view model
             }
         }
     }
 }
-
