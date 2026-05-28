@@ -79,7 +79,9 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     private func startActiveWorkout() {
-        guard CMPedometer.isStepCountingAvailable() else { return }
+        #if !targetEnvironment(simulator)
+            guard CMPedometer.isStepCountingAvailable() else { return }
+        #endif
 
         dailyBaselineBeforeWorkout = dailySteps
         passivePedometer.stopUpdates()
@@ -111,11 +113,10 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     private func stopActiveWorkout() {
-        
+
         activePedometer.stopUpdates()
         session.isRunning = false
 
-    
         startPassiveTracking()
     }
 
@@ -137,62 +138,88 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     func attachRouteToSession(_ route: [RouteCoordinate]) {
-            self.session.route = route
-            
-            // Trigger the database saves automatically when the session finishes
-            Task {
-                await saveWorkoutToFirebase()
-                await syncDailyStepsToFirebase()
-            }
+        self.session.route = route
+
+        // Trigger the database saves automatically when the session finishes
+        Task {
+            await saveWorkoutToFirebase()
+            await syncDailyStepsToFirebase()
         }
-        
-        private func saveWorkoutToFirebase() async {
-            guard let userId = Auth.auth().currentUser?.uid else { return }
-            
-            
-            let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
-            
-            do {
-                try dbRef
-                    .child("users")
-                    .child(userId)
-                    .child("workoutHistory")
-                    .child(sessionId)
-                    .setValue(from: session)
-                
-                print("Successfully saved Active Workout to Firebase.")
-            } catch {
-                print("Failed to save workout: \(error.localizedDescription)")
-            }
+    }
+
+    private func saveWorkoutToFirebase() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+
+        do {
+            try dbRef
+                .child("users")
+                .child(userId)
+                .child("workoutHistory")
+                .child(sessionId)
+                .setValue(from: session)
+
+            print("Successfully saved Active Workout to Firebase.")
+        } catch {
+            print("Failed to save workout: \(error.localizedDescription)")
         }
-        
-        func syncDailyStepsToFirebase() async {
-            guard let userId = Auth.auth().currentUser?.uid else { return }
-            
-            // Use today's date as the document ID (e.g., "2026-05-28")
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let dateString = formatter.string(from: Date())
-            
-            // Re-use your ActivityData model for the push
-            let activity = ActivityData(
-                steps: dailySteps,
-                caloriesBurned: Double(dailySteps) * 0.04,
-                distanceInMeters: Double(dailySteps) * 0.762,
-                date: Date()
+    }
+
+    func syncDailyStepsToFirebase() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        // Use today's date as the document ID (e.g., "2026-05-28")
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: Date())
+
+        // Re-use your ActivityData model for the push
+        let activity = ActivityData(
+            steps: dailySteps,
+            caloriesBurned: Double(dailySteps) * 0.04,
+            distanceInMeters: Double(dailySteps) * 0.762,
+            date: Date()
+        )
+
+        do {
+            try dbRef
+                .child("users")
+                .child(userId)
+                .child("dailyActivity")
+                .child(dateString)
+                .setValue(from: activity)
+
+            print(
+                "Successfully synced \(dailySteps) total daily steps to Firebase."
             )
-            
-            do {
-                try dbRef
-                    .child("users")
-                    .child(userId)
-                    .child("dailyActivity")
-                    .child(dateString)
-                    .setValue(from: activity)
-                
-                print("Successfully synced \(dailySteps) total daily steps to Firebase.")
-            } catch {
-                print("Failed to sync daily steps: \(error.localizedDescription)")
-            }
+        } catch {
+            print("Failed to sync daily steps: \(error.localizedDescription)")
         }
+    }
+
+    #if DEBUG
+        /// Forces the view model into an active running state without needing hardware sensors
+        func test_forceWorkoutState(isRunning: Bool) {
+            self.session.isRunning = isRunning
+        }
+
+        /// Hardcodes step and distance data directly into the properties
+        func test_injectMetrics(
+            passiveSteps: Int,
+            activeSteps: Int,
+            distance: Double,
+            pace: Double
+        ) {
+            self.dailySteps = passiveSteps + activeSteps
+            self.session.steps = activeSteps
+            self.session.distanceInMeters = distance
+            self.session.currentPace = pace
+        }
+
+        /// Hardcodes the daily target without needing a Firebase fetch
+        func test_setTarget(_ target: Int) {
+            self.dailyTarget = target
+        }
+    #endif
 }
