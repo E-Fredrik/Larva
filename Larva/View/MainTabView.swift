@@ -40,7 +40,7 @@ struct MainTabView: View {
         friendVM: FriendViewModel(
             currentUser: User(
                 id: "1",
-                username: "Kenjo",
+                username: "Kenjo", friendCode: "ROAM-0F0K",
                 points: 100,
                 currentStreak: 100,
                 dailyStepTarget: 500,
@@ -52,10 +52,10 @@ struct MainTabView: View {
         questVM: QuestViewModel(
             currentUser: User(
                 id: "1",
-                username: "Kenjo",
+                username: "Kenjo", friendCode: "ROAM-0F0K",
                 points: 100,
                 currentStreak: 100,
-                dailyStepTarget: 5000,
+                dailyStepTarget: 500,
                 friendList: [],
                 pendingFriendRequests: [],
                 unlockedCustomizations: []
@@ -64,10 +64,10 @@ struct MainTabView: View {
         shopVM: ShopViewModel(
             currentUser: User(
                 id: "1",
-                username: "Kenjo",
-                points: 2500,
+                username: "Kenjo", friendCode: "ROAM-0F0K",
+                points: 100,
                 currentStreak: 100,
-                dailyStepTarget: 5000,
+                dailyStepTarget: 500,
                 friendList: [],
                 pendingFriendRequests: [],
                 unlockedCustomizations: []
