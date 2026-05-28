@@ -7,6 +7,8 @@
 
 import Combine
 import CoreMotion
+import FirebaseAuth
+import FirebaseDatabase
 import Foundation
 
 @MainActor
@@ -22,7 +24,9 @@ class StepTrackerViewModel: ObservableObject {
 
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
-    
+
+    private let dbRef = Database.database().reference()
+
     // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
 
@@ -32,8 +36,23 @@ class StepTrackerViewModel: ObservableObject {
             distanceInMeters: 0.0,
             currentPace: 0.0,
             startDate: Date(),
-            isRunning: false
+            isRunning: false,
+            route: []
         )
+    }
+
+    func fetchUserDailyTarget() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        do {
+            let snapshot = try await dbRef.child("users").child(userId).child(
+                "dailyStepTarget"
+            ).getData()
+            if let target = snapshot.value as? Int {
+                self.dailyTarget = target
+            }
+        } catch {
+            print("Failed to fetch target, using default.")
+        }
     }
 
     func startPassiveTracking() {
@@ -41,7 +60,8 @@ class StepTrackerViewModel: ObservableObject {
 
         let midnight = Calendar.current.startOfDay(for: Date())
 
-        passivePedometer.startUpdates(from: midnight) { [weak self] data, error in
+        passivePedometer.startUpdates(from: midnight) {
+            [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
@@ -61,41 +81,41 @@ class StepTrackerViewModel: ObservableObject {
     private func startActiveWorkout() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        // 1. Save current daily steps and STOP passive updates to free up the hardware sensor
         dailyBaselineBeforeWorkout = dailySteps
         passivePedometer.stopUpdates()
 
-        // 2. Initialize the active session state
         session = WorkoutData(
             steps: 0,
             distanceInMeters: 0.0,
             currentPace: 0.0,
             startDate: Date(),
-            isRunning: true
+            isRunning: true,
+            route: []
         )
 
-        // 3. Start real-time updates specifically for the workout
-        activePedometer.startUpdates(from: session.startDate) { [weak self] data, error in
+        activePedometer.startUpdates(from: session.startDate) {
+            [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
-                // Update the active running stats
                 self.session.steps = data.numberOfSteps.intValue
-                self.session.distanceInMeters = data.distance?.doubleValue ?? 0.0
+                self.session.distanceInMeters =
+                    data.distance?.doubleValue ?? 0.0
                 self.session.currentPace = data.currentPace?.doubleValue ?? 0.0
-                
-                // Keep the overall daily target progressing while running
-                self.dailySteps = self.dailyBaselineBeforeWorkout + data.numberOfSteps.intValue
+
+                self.dailySteps =
+                    self.dailyBaselineBeforeWorkout
+                    + data.numberOfSteps.intValue
             }
         }
     }
 
     private func stopActiveWorkout() {
-        // 1. Stop the high-frequency active tracking
+        
         activePedometer.stopUpdates()
         session.isRunning = false
 
-        // 2. Restart the passive tracking to resume all-day background counting
+    
         startPassiveTracking()
     }
 
@@ -115,4 +135,64 @@ class StepTrackerViewModel: ObservableObject {
             return String(format: "%.0f m", session.distanceInMeters)
         }
     }
+
+    func attachRouteToSession(_ route: [RouteCoordinate]) {
+            self.session.route = route
+            
+            // Trigger the database saves automatically when the session finishes
+            Task {
+                await saveWorkoutToFirebase()
+                await syncDailyStepsToFirebase()
+            }
+        }
+        
+        private func saveWorkoutToFirebase() async {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            
+            
+            let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+            
+            do {
+                try dbRef
+                    .child("users")
+                    .child(userId)
+                    .child("workoutHistory")
+                    .child(sessionId)
+                    .setValue(from: session)
+                
+                print("Successfully saved Active Workout to Firebase.")
+            } catch {
+                print("Failed to save workout: \(error.localizedDescription)")
+            }
+        }
+        
+        func syncDailyStepsToFirebase() async {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            
+            // Use today's date as the document ID (e.g., "2026-05-28")
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let dateString = formatter.string(from: Date())
+            
+            // Re-use your ActivityData model for the push
+            let activity = ActivityData(
+                steps: dailySteps,
+                caloriesBurned: Double(dailySteps) * 0.04,
+                distanceInMeters: Double(dailySteps) * 0.762,
+                date: Date()
+            )
+            
+            do {
+                try dbRef
+                    .child("users")
+                    .child(userId)
+                    .child("dailyActivity")
+                    .child(dateString)
+                    .setValue(from: activity)
+                
+                print("Successfully synced \(dailySteps) total daily steps to Firebase.")
+            } catch {
+                print("Failed to sync daily steps: \(error.localizedDescription)")
+            }
+        }
 }

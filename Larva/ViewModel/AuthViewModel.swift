@@ -52,6 +52,7 @@ class AuthViewModel: ObservableObject {
                 username: username,
                 points: 0,
                 currentStreak: 0,
+                dailyStepTarget: 5000,
                 friendList: [],
                 pendingFriendRequests: [],
                 unlockedCustomizations: []

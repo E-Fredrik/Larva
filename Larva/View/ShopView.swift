@@ -85,5 +85,5 @@ struct ShopView: View {
 }
 
 #Preview {
-    ShopView(viewModel: ShopViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
+    ShopView(viewModel: ShopViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, dailyStepTarget: 5000, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
 }
