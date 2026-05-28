@@ -8,8 +8,10 @@
 import Foundation
 import CoreLocation
 import MapKit
+import Combine
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    
     private var manager = CLLocationManager()
     
     @Published var region = MKCoordinateRegion(
@@ -63,3 +65,4 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 }
+

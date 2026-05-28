@@ -13,7 +13,6 @@ struct FriendProfileView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
-                // Avatar Placeholder
                 Circle()
                     .fill(Color.mint.opacity(0.2))
                     .frame(width: 120, height: 120)
@@ -38,7 +37,6 @@ struct FriendProfileView: View {
                         .cornerRadius(8)
                 }
                 
-                // Stats Grid
                 HStack(spacing: 20) {
                     StatBox(title: "Streak", value: "\(user.currentStreak)", icon: "flame.fill", color: .orange)
                     StatBox(title: "Points", value: "\(user.points)", icon: "star.fill", color: .yellow)
@@ -50,32 +48,5 @@ struct FriendProfileView: View {
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct StatBox: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title)
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(16)
     }
 }
