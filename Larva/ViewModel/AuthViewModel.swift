@@ -1,7 +1,7 @@
-import SwiftUI
-import FirebaseAuth
-import FirebaseFirestore
 import Combine
+import FirebaseAuth
+import FirebaseDatabase
+import SwiftUI
 
 @MainActor
 class AuthViewModel: ObservableObject {
@@ -9,37 +9,44 @@ class AuthViewModel: ObservableObject {
     @Published var currentUser: User?
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
-    
-    private let db = Firestore.firestore()
+
+    // Realtime Database Reference
+    private let dbRef = Database.database().reference()
     private var cancellables = Set<AnyCancellable>()
-    
+
     init() {
         userSession = Auth.auth().currentUser
         Task {
-            await fetchUserDocument()
+            await fetchUserData()
         }
     }
-    
+
     func login(email: String, password: String) async {
         isLoading = true
         errorMessage = ""
         do {
-            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            let result = try await Auth.auth().signIn(
+                withEmail: email,
+                password: password
+            )
             self.userSession = result.user
-            await fetchUserDocument()
+            await fetchUserData()
         } catch {
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
     }
-    
+
     func signUp(email: String, password: String, username: String) async {
         isLoading = true
         errorMessage = ""
         do {
-            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            let result = try await Auth.auth().createUser(
+                withEmail: email,
+                password: password
+            )
             self.userSession = result.user
-            
+
             let newUser = User(
                 id: result.user.uid,
                 username: username,
@@ -49,16 +56,18 @@ class AuthViewModel: ObservableObject {
                 pendingFriendRequests: [],
                 unlockedCustomizations: []
             )
-            
-            try db.collection("users").document(result.user.uid).setData(from: newUser)
+
+            try dbRef.child("users").child(result.user.uid).setValue(
+                from: newUser
+            )
             self.currentUser = newUser
-            
+
         } catch {
             self.errorMessage = error.localizedDescription
         }
         isLoading = false
     }
-    
+
     func signOut() {
         do {
             try Auth.auth().signOut()
@@ -68,12 +77,17 @@ class AuthViewModel: ObservableObject {
             print("Failed to sign out: \(error.localizedDescription)")
         }
     }
-    
-    private func fetchUserDocument() async {
+
+    private func fetchUserData() async {
         guard let uid = userSession?.uid else { return }
         do {
-            let document = try await db.collection("users").document(uid).getDocument()
-            self.currentUser = try document.data(as: User.self)
+
+            let snapshot = try await dbRef.child("users").child(uid).getData()
+
+            if snapshot.exists() {
+
+                self.currentUser = try snapshot.data(as: User.self)
+            }
         } catch {
             print("Error fetching user data: \(error.localizedDescription)")
         }
