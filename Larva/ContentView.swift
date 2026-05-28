@@ -14,7 +14,8 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if authViewModel.userSession != nil {
+            // Check for userId
+            if authViewModel.currentUserId != nil {
                 if let currentUser = authViewModel.currentUser {
                     AuthenticatedRootView(user: currentUser, sizeClass: horizontalSizeClass)
                         .transition(.opacity)
@@ -48,7 +49,8 @@ struct ContentView: View {
             }
         }
         // Smoothly animate the transitions between login, loading, and the main app
-        .animation(.easeInOut, value: authViewModel.userSession)
+        // Updated to watch currentUserId
+        .animation(.easeInOut, value: authViewModel.currentUserId)
         .animation(.easeInOut, value: authViewModel.currentUser?.id)
         
         // Inject the auth model so LoginView and SignUpView can use it

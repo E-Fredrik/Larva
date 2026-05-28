@@ -1,5 +1,5 @@
 //
-//  AcitivtyData.swift
+//  ActivityData.swift
 //  LarvaLawas
 //
 //  Created by Eko Nur Cahyo S on 27/05/26.

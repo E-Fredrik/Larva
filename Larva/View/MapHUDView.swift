@@ -111,7 +111,7 @@ struct MapHUDView: View {
 
                 DailyStepsCard(
                     stepCount: stepTracker.dailySteps,
-                    targetSteps: stepTracker.dailyTarget,
+                    targetSteps: stepTracker.dailyTarget
                 )
                 .padding(.horizontal)
 
@@ -170,7 +170,11 @@ struct MapHUDView: View {
             if isRunning {
                 locationManager.startRecordingWorkout()
             } else {
-                let finalizedRoute = locationManager.stopRecordingWorkout()
+                locationManager.stopRecordingWorkout()
+
+                let finalizedRoute = locationManager.workoutRoute.map { coord in
+                    RouteCoordinate(lat: coord.latitude, lng: coord.longitude)
+                }
 
                 stepTracker.attachRouteToSession(finalizedRoute)
 
@@ -181,7 +185,6 @@ struct MapHUDView: View {
         }
         .onAppear {
             stepTracker.startPassiveTracking()
-            // Fetch the user's specific target from Firebase
             Task {
                 await stepTracker.fetchUserDailyTarget()
             }
