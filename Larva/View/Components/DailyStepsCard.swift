@@ -9,37 +9,48 @@ import SwiftUI
 
 struct DailyStepsCard: View {
     let stepCount: Int
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("DAILY TARGET PROGRESS")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.secondary)
-                
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(stepCount)")
-                        .font(.system(.title, design: .rounded))
-                        .fontWeight(.heavy)
-                    Text("steps")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                }
-            }
-            Spacer()
-            
-            Image(systemName: "flame.circle.fill")
-                .resizable()
-                .frame(width: 40, height: 40)
-                .foregroundColor(.orange)
+        let targetSteps: Int
+        
+        var progress: Double {
+            Double(stepCount) / Double(targetSteps)
         }
-        .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
-    }
+        
+        var body: some View {
+            HStack(spacing: 16) {
+                ZStack {
+                    ActivityRing(progress: progress, color: .mint)
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "figure.walk")
+                        .foregroundColor(.mint)
+                        .font(.system(size: 20, weight: .bold))
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DAILY TARGET")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("\(stepCount)")
+                            .font(.system(.title2, design: .rounded))
+                            .fontWeight(.heavy)
+                            .foregroundColor(.primary)
+                        
+                        Text("/ \(targetSteps)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                Spacer()
+            }
+            .padding()
+            .background(.regularMaterial)
+            .cornerRadius(20)
+        }
 }
 
 #Preview {
-    DailyStepsCard(stepCount: 4500)
+    DailyStepsCard(stepCount: 4500, targetSteps: 5000)
 }

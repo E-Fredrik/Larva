@@ -11,8 +11,14 @@ import Foundation
 
 @MainActor
 class StepTrackerViewModel: ObservableObject {
-    @Published private var dailySteps: Int = 0
-    @Published private var session: WorkoutData
+    @Published private(set) var dailySteps: Int = 0
+    @Published var dailyTarget: Int = 5000
+    @Published private(set) var session: WorkoutData
+
+    var dailyProgress: Double {
+        guard dailyTarget > 0 else { return 0.0 }
+        return Double(dailySteps) / Double(dailyTarget)
+    }
 
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
@@ -29,7 +35,7 @@ class StepTrackerViewModel: ObservableObject {
 
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
-        
+
         //Finds the start of the day so that it can start tracking for the current day
         let midnight = Calendar.current.startOfDay(for: Date())
 

@@ -5,17 +5,22 @@
 //  Created by Eko Nur Cahyo S on 27/05/26.
 //
 
-import SwiftUI
 import Combine
 import MapKit
+import SwiftUI
 
 struct MapHUDView: View {
     @StateObject private var locationManager = LocationManager()
-    
+    @StateObject private var stepTracker = StepTrackerViewModel()
+
     var body: some View {
         ZStack {
             // Map Initialization
-            Map(coordinateRegion: $locationManager.region, showsUserLocation: true, annotationItems: locationManager.waypoints) { waypoint in
+            Map(
+                coordinateRegion: $locationManager.region,
+                showsUserLocation: true,
+                annotationItems: locationManager.waypoints
+            ) { waypoint in
                 MapAnnotation(coordinate: waypoint.coordinate) {
                     if !waypoint.isClaimed {
                         VStack {
@@ -23,7 +28,7 @@ struct MapHUDView: View {
                                 Circle()
                                     .fill(Color.mint.opacity(0.3))
                                     .frame(width: 40, height: 40)
-                                
+
                                 Circle()
                                     .fill(Color.mint)
                                     .frame(width: 16, height: 16)
@@ -55,12 +60,30 @@ struct MapHUDView: View {
                 .background(.thinMaterial)
                 .cornerRadius(16)
                 .padding()
-                
-                Spacer()
+
+                DailyStepsCard(
+                    stepCount: stepTracker.dailySteps,
+                    targetSteps: Int(stepTracker.dailySteps)
+                )
+                .padding(.horizontal)
+
+                Spacer() 
+                WorkoutControlPanel(
+                    isRecording: stepTracker.session.isRunning,
+                    steps: stepTracker.session.steps,
+                    distance: stepTracker.formattedDistance,
+                    pace: stepTracker.formattedPace,
+                    onToggleAction: {
+                        stepTracker.toggleWorkoutSession()
+                    }
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 24)
             }
         }
     }
 }
+
 struct MapHUDView_Previews: PreviewProvider {
     static var previews: some View {
         MapHUDView()

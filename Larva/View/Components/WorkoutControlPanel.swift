@@ -13,61 +13,35 @@ struct WorkoutControlPanel: View {
     let distance: String
     let pace: String
     let onToggleAction: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 16) {
             if isRecording {
                 HStack(spacing: 32) {
-                    VStack(alignment: .center) {
-                        Text("Session Steps")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(steps)")
-                            .font(.title3.monospacedDigit())
-                            .fontWeight(.bold)
-                    }
-                    
-                    VStack(alignment: .center) {
-                        Text("Distance")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(distance)
-                            .font(.title3.monospacedDigit())
-                            .fontWeight(.bold)
-                    }
-                    
-                    VStack(alignment: .center) {
-                        Text("Current Pace")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("\(pace) /km")
-                            .font(.title3.monospacedDigit())
-                            .fontWeight(.bold)
-                    }
+                    WorkoutStats(title: "Steps", value: "\(steps)")
+                    WorkoutStats(title: "Distance", value: distance)
+                    WorkoutStats(title: "Pace", value: "\(pace)/km")
                 }
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-            
-            Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                    onToggleAction()
-                }
-            }) {
+
+            Button(action: onToggleAction) {
                 HStack {
                     Image(systemName: isRecording ? "stop.fill" : "figure.run")
-                    Text(isRecording ? "End Session" : "Start Active Tracking")
-                        .fontWeight(.semibold)
+                    Text(isRecording ? "End Session" : "Start Tracking")
+                        .fontWeight(.bold)
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(isRecording ? Color.red : Color.mint)
                 .foregroundColor(.white)
-                .cornerRadius(12)
+                .cornerRadius(16)
             }
         }
         .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(20)
+        .background(.regularMaterial)
+        .cornerRadius(24)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
     }
 }
 
