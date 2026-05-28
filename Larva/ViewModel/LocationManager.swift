@@ -2,70 +2,108 @@
 //  LocationManager.swift
 //  LarvaLawas
 //
-//  Created by Eko Nur Cahyo S on 27/05/26.
-//
 
 import Combine
 import CoreLocation
 import Foundation
 import MapKit
+import FirebaseDatabase
+import FirebaseAuth
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     private var manager = CLLocationManager()
-
-    // Track raw location
+    private var dbRef = Database.database().reference()
+    
+    private var currentUserId: String? {
+        return Auth.auth().currentUser?.uid
+    }
+    
     @Published var userLocation: CLLocation?
-
-    // Navigation Data
     @Published var route: MKRoute?
     @Published var destinationCoordinate: CLLocationCoordinate2D?
-
-    //Workout History Tracking
+    
     @Published var workoutRoute: [CLLocationCoordinate2D] = []
     private var isRecordingWorkout: Bool = false
-
-    @Published var waypoints: [MapWaypoint] = [
-        MapWaypoint(
-            name: "Apple Infinite Loop",
-            coordinate: CLLocationCoordinate2D(
-                latitude: 37.3308,
-                longitude: -122.0315
-            ),
-            rewardPoints: 50
-        ),
-        MapWaypoint(
-            name: "De Anza Blvd",
-            coordinate: CLLocationCoordinate2D(
-                latitude: 37.3325,
-                longitude: -122.0305
-            ),
-            rewardPoints: 100
-        ),
-        MapWaypoint(
-            name: "Campus Gate",
-            coordinate: CLLocationCoordinate2D(
-                latitude: -7.2515,
-                longitude: 112.7690
-            ),
-            rewardPoints: 50
-        ),
-        MapWaypoint(
-            name: "Coffee Shop",
-            coordinate: CLLocationCoordinate2D(
-                latitude: -7.2490,
-                longitude: 112.7680
-            ),
-            rewardPoints: 100
-        ),
-    ]
-
+    
+    @Published var waypoints: [MapWaypoint] = []
+    
+    private var allGlobalWaypoints: [MapWaypoint] = []
+    private var userClaimedIDs: Set<String> = []
+    
     override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
+        
+        fetchDataStreams()
+    }
+    
+    private func fetchDataStreams() {
+        dbRef.child("waypoints").observe(.value) { [weak self] snapshot in
+            guard let self = self else { return }
+            var newWaypoints: [MapWaypoint] = []
+            
+            for child in snapshot.children {
+                if let childSnapshot = child as? DataSnapshot,
+                   let dict = childSnapshot.value as? [String: Any],
+                   let waypoint = MapWaypoint(id: childSnapshot.key, dictionary: dict) {
+                    newWaypoints.append(waypoint)
+                }
+            }
+            
+            self.allGlobalWaypoints = newWaypoints
+            self.mergeWaypointData()
+        }
+        
+        if let userId = currentUserId {
+            dbRef.child("users").child(userId).child("claimedWaypoints").observe(.value) { [weak self] snapshot in
+                guard let self = self else { return }
+                var claimedIDs = Set<String>()
+                
+                for child in snapshot.children {
+                    if let childSnapshot = child as? DataSnapshot,
+                       let isClaimed = childSnapshot.value as? Bool, isClaimed == true {
+                        claimedIDs.insert(childSnapshot.key)
+                    }
+                }
+                self.userClaimedIDs = claimedIDs
+                self.mergeWaypointData()
+            }
+        }
+    }
+    
+    private func mergeWaypointData() {
+        var mergedWaypoints = allGlobalWaypoints
+        for i in 0..<mergedWaypoints.count {
+            if userClaimedIDs.contains(mergedWaypoints[i].id) {
+                mergedWaypoints[i].isClaimed = true
+            }
+        }
+        DispatchQueue.main.async {
+            self.waypoints = mergedWaypoints
+        }
+    }
+    
+    private func markWaypointAsClaimedInFirebase(waypointId: String, rewardPoints: Int) {
+        guard let userId = currentUserId else {
+            print("Error: No user logged in to claim waypoint")
+            return
+        }
+        
+        dbRef.child("users").child(userId).child("claimedWaypoints").updateChildValues([
+            waypointId: true
+        ])
+        
+        let userPointsRef = dbRef.child("users").child(userId).child("points")
+        userPointsRef.runTransactionBlock { (currentData: MutableData) -> TransactionResult in
+            var points = currentData.value as? Int ?? 0
+            points += rewardPoints
+            currentData.value = points
+            return TransactionResult.success(withValue: currentData)
+        }
     }
 
     func locationManager(
@@ -97,7 +135,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             RouteCoordinate(lat: $0.latitude, lng: $0.longitude)
         }
     }
-
+    
     func calculateWalkingRoute(to destination: CLLocationCoordinate2D) {
         guard let userLocation = userLocation else { return }
 
@@ -132,8 +170,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     private func checkWaypointArrival(userLocation: CLLocation) {
-        let captureRadiusInMeters: CLLocationDistance = 50.0
-
+        let captureRadiusInMeters: CLLocationDistance = 100.0
+        
         for index in waypoints.indices {
             let waypoint = waypoints[index]
 
@@ -144,12 +182,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                 longitude: waypoint.coordinate.longitude
             )
             let distance = userLocation.distance(from: poiLocation)
+            
             if distance <= captureRadiusInMeters {
-                waypoints[index].isClaimed = true
-                print(
-                    "🎉 Arrived at \(waypoint.name)! Awarded \(waypoint.rewardPoints) points."
-                )
-                // Connect to model and view model
+                print("🎉 Arrived at \(waypoint.name)! Awarded \(waypoint.rewardPoints) points.")
+                
+                markWaypointAsClaimedInFirebase(waypointId: waypoint.id, rewardPoints: waypoint.rewardPoints)
             }
         }
     }

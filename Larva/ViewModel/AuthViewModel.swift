@@ -38,39 +38,37 @@ class AuthViewModel: ObservableObject {
     }
 
     func signUp(email: String, password: String, username: String) async {
-            isLoading = true
-            errorMessage = ""
-            do {
-                let result = try await Auth.auth().createUser(
-                    withEmail: email,
-                    password: password
-                )
-                self.userSession = result.user
+        isLoading = true
+        errorMessage = ""
+        do {
+            let result = try await Auth.auth().createUser(
+                withEmail: email,
+                password: password
+            )
+            self.userSession = result.user
 
-            
-                let generatedCode = String((0..<6).map { _ in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()! })
+            let newUser = User(
+                id: result.user.uid,
+                username: username,
+                points: 0,
+                currentStreak: 0,
+                dailyStepTarget: 5000,
+                friendList: [],
+                pendingFriendRequests: [],
+                unlockedCustomizations: [],
+                claimedWaypoints: [:]
+            )
 
-                let newUser = User(
-                    id: result.user.uid,
-                    username: username,
-                    friendCode: generatedCode,
-                    points: 0,
-                    currentStreak: 0,
-                    friendList: [],
-                    pendingFriendRequests: [],
-                    unlockedCustomizations: []
-                )
+            try dbRef.child("users").child(result.user.uid).setValue(
+                from: newUser
+            )
+            self.currentUser = newUser
 
-                try dbRef.child("users").child(result.user.uid).setValue(
-                    from: newUser
-                )
-                self.currentUser = newUser
-
-            } catch {
-                self.errorMessage = error.localizedDescription
-            }
-            isLoading = false
+        } catch {
+            self.errorMessage = error.localizedDescription
         }
+        isLoading = false
+    }
 
     func signOut() {
         do {
