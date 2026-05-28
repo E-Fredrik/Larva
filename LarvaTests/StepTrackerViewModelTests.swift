@@ -5,6 +5,8 @@
 //  Created by Elifele Fredrik on 28/05/26.
 //
 
+import FirebaseAuth
+import FirebaseDatabase
 import Testing
 
 @testable import Larva
@@ -108,16 +110,71 @@ struct StepTrackerViewModelTests {
         vm.toggleWorkoutSession()
 
         vm.test_injectMetrics(
-                passiveSteps: 2000,
-                activeSteps: 1500,
-                distance: 1000,
-                pace: 0.3
-            )
+            passiveSteps: 2000,
+            activeSteps: 1500,
+            distance: 1000,
+            pace: 0.3
+        )
 
         #expect(vm.session.steps == 1500, "Session steps failed.")
         #expect(
             vm.dailySteps == 3500,
             "Daily steps should combine the 2000 passive + 1500 active steps."
         )
+    }
+
+    @Test("Fetch Data from Firebase")
+    func fetchDataFromFirebase() async throws {
+        let testUserId =
+            try await FirebaseIntegrationHelper.createAnonymousTestUser()
+
+        //Use defer to cleanup test data from database, this runs before the function ends.
+        defer {
+            Task {
+                await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
+            }
+        }
+        let dbRef = Database.database().reference()
+        try await dbRef.child("users").child(testUserId).child(
+            "dailyStepTarget"
+        ).setValue(8888)
+
+        await vm.fetchUserDailyTarget()
+        #expect(
+            vm.dailyTarget == 8888,
+            "ViewModel failed to fetch the custom target from Firebase"
+        )
+    }
+
+    @Test("Upload data to firebase")
+    func uploadDataToFirebase() async throws {
+        let testUserId =
+            try await FirebaseIntegrationHelper.createAnonymousTestUser()
+        defer {
+            Task {
+                await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
+            }
+        }
+        let dbRef = Database.database().reference()
+        let dummyRoute = [RouteCoordinate(lat: -7.2504, lng: 112.7688)]
+        vm.attachRouteToSession(dummyRoute)
+        try await Task.sleep(nanoseconds: 2_000_000_000) //Sleeps for 2 seconds
+        let historySnapshot = try await dbRef.child("users").child(testUserId)
+            .child("workoutHistory").getData()
+
+        #expect(
+            historySnapshot.exists(),
+            "ViewModel failed to upload the workout session to Firebase"
+        )
+
+        let historyDict = historySnapshot.value as? [String: Any]
+        let firstSession = historyDict?.values.first as? [String: Any]
+        let routeArray = firstSession?["route"] as? [[String: Double]]
+
+        #expect(
+            routeArray?.first?["lat"] == -7.2504,
+            "ViewModel uploaded incorrect GPS coordinates"
+        )
+
     }
 }

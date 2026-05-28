@@ -11,6 +11,29 @@ import FirebaseAuth
 import FirebaseDatabase
 import Foundation
 
+protocol StepTrackerDatabaseService {
+    func fetchDailyTarget(userId: String) async throws -> Int?
+    func saveWorkoutHistory(userId: String, sessionId: String, session: WorkoutData) async throws
+    func syncDailyActivity(userId: String, dateString: String, activity: ActivityData) async throws
+}
+
+struct FirebaseStepTrackerDatabase: StepTrackerDatabaseService {
+    private let dbRef = Database.database().reference()
+    
+    func fetchDailyTarget(userId: String) async throws -> Int? {
+        let snapshot = try await dbRef.child("users").child(userId).child("dailyStepTarget").getData()
+        return snapshot.value as? Int
+    }
+    
+    func saveWorkoutHistory(userId: String, sessionId: String, session: WorkoutData) async throws {
+        try dbRef.child("users").child(userId).child("workoutHistory").child(sessionId).setValue(from: session)
+    }
+    
+    func syncDailyActivity(userId: String, dateString: String, activity: ActivityData) async throws {
+        try dbRef.child("users").child(userId).child("dailyActivity").child(dateString).setValue(from: activity)
+    }
+}
+
 @MainActor
 class StepTrackerViewModel: ObservableObject {
     @Published private(set) var dailySteps: Int = 0
