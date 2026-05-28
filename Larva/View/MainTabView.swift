@@ -21,9 +21,12 @@ struct MainTabView: View {
                 }
             QuestsView(viewModel: questVM)
                 .tabItem {
-                    Label("Quests", systemImage: "flame.bullet")
+                    Label("Quests", systemImage: "flame.fill")
                 }
             ShopView(viewModel: shopVM)
+                .tabItem{
+                 Label("Shop", systemImage: "cart.fill")
+                }
             FriendsView()
                 .tabItem{
                     Label("Friends", systemImage: "person.2.fill")
