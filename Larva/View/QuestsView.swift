@@ -52,22 +52,6 @@ struct QuestsView: View {
                             Spacer().frame(height: 100)
                         }
                     }
-
-                    VStack {
-                        Spacer()
-                        Text(
-                            "Solo quests are automatically completed and rewarded as you track your steps."
-                        )
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(.thinMaterial)
-                        .cornerRadius(16)
-                        .padding(.horizontal)
-                        .padding(.bottom, 24)
-                    }
                 }
                 .navigationTitle("Daily Quests")
             }

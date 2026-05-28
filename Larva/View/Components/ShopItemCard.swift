@@ -22,65 +22,77 @@ struct ShopItemCard: View {
     }
     
     var body: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(isOwned ? Color.mint.opacity(0.2) : Color.secondary.opacity(0.1))
-                    .frame(width: 60, height: 60)
+        VStack(alignment: .leading, spacing: 12) {
+            // Icon & Type Header
+            HStack(alignment: .top) {
+                ZStack {
+                    Circle()
+                        .fill(isOwned ? Color.mint.opacity(0.2) : Color.mint.opacity(0.1))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: iconName)
+                        .font(.title3)
+                        .foregroundColor(isOwned ? .mint : .mint.opacity(0.8))
+                }
                 
-                Image(systemName: iconName)
-                    .font(.title)
-                    .foregroundColor(isOwned ? .mint : .primary)
+                Spacer()
+                
+                if isOwned {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.mint)
+                        .font(.title3)
+                }
             }
-            .padding(.top, 12)
             
-            VStack(spacing: 4) {
+            // Text Content
+            VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
                     .font(.headline)
-                    .multilineTextAlignment(.center)
+                    .fontWeight(.bold)
                     .lineLimit(1)
                 
                 Text(item.itemType.rawValue.capitalized)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
             
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
             
+            // Purchase Button Area
             if isOwned {
-                Text("Owned")
-                    .font(.subheadline)
+                Text("Equipped")
+                    .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.mint)
-                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                     .background(Color.mint.opacity(0.1))
-                    .cornerRadius(8)
+                    .cornerRadius(10)
             } else {
                 Button(action: purchaseAction) {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.caption)
-                        // Reads from your 'cost' property
                         Text("\(item.cost)")
                             .fontWeight(.bold)
                     }
                     .foregroundColor(canAfford ? .white : .secondary)
-                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                     .background(canAfford ? Color.mint : Color.secondary.opacity(0.2))
-                    .cornerRadius(8)
+                    .cornerRadius(10)
                 }
                 .disabled(!canAfford)
             }
         }
-        .padding(12)
-        .frame(height: 200)
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(16)
+        .padding(16)
+        .frame(height: 190)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(isOwned ? Color.mint : Color.clear, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(isOwned ? Color.mint.opacity(0.5) : Color.clear, lineWidth: 2)
         )
     }
 }
