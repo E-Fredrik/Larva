@@ -71,9 +71,13 @@ class StepTrackerViewModel: ObservableObject {
     private let activePedometer = CMPedometer()
 
     private let dbRef = Database.database().reference()
+    
+    private var cancellables = Set<AnyCancellable>()
 
     // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
+    
+    private var currentSessionId: String = ""
 
     init() {
         self.session = WorkoutData(
@@ -84,6 +88,21 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: false,
             route: []
         )
+        
+        WatchConnectivityManager.shared.$remoteWorkoutState
+            .compactMap({ $0 })
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isRunning in
+                guard let self = self else { return }
+                
+                if self.session.isRunning != isRunning {
+                    if isRunning {
+                        self.startActiveWorkout(isRemoteCommand: true)
+                    } else {
+                        self.stopActiveWorkout(isRemoteCommand: true)
+                    }
+                }
+            }.store(in: &cancellables)
     }
 
     func fetchUserDailyTarget() async {
@@ -127,13 +146,13 @@ class StepTrackerViewModel: ObservableObject {
 
     func toggleWorkoutSession() {
         if session.isRunning {
-            stopActiveWorkout()
+            stopActiveWorkout(isRemoteCommand: false)
         } else {
-            startActiveWorkout()
+            startActiveWorkout(isRemoteCommand: false)
         }
     }
 
-    private func startActiveWorkout() {
+    private func startActiveWorkout(isRemoteCommand: Bool = false) {
         #if !targetEnvironment(simulator)
             guard CMPedometer.isStepCountingAvailable() else { return }
         #endif
@@ -149,6 +168,10 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: true,
             route: []
         )
+        
+        if !isRemoteCommand {
+            WatchConnectivityManager.shared.sendWorkoutState(isRunning: true)
+        }
 
         activePedometer.startUpdates(from: session.startDate) {
             [weak self] data, error in
@@ -165,14 +188,21 @@ class StepTrackerViewModel: ObservableObject {
                     + data.numberOfSteps.intValue
             }
         }
+        self.currentSessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+        WatchConnectivityManager.shared.sendWorkoutState(isRunning: true)
     }
 
-    private func stopActiveWorkout() {
+    private func stopActiveWorkout(isRemoteCommand: Bool = false) {
 
         activePedometer.stopUpdates()
         session.isRunning = false
+        
+        if !isRemoteCommand {
+            WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
+        }
 
         startPassiveTracking()
+        WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
     }
 
     // Formats pace since apple natively saves it in seconds per meter, we want to display it as minutes per kilometer
@@ -206,7 +236,7 @@ class StepTrackerViewModel: ObservableObject {
     private func saveWorkoutToFirebase() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
-        let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+        let sessionId = self.currentSessionId.isEmpty ? "SESSION-\(UUID().uuidString.prefix(8))" : self.currentSessionId
 
         do {
             try dbRef

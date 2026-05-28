@@ -13,6 +13,8 @@
 		3FC2C9B92FC7D03700F38FA7 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC2C9B82FC7D03700F38FA7 /* FirebaseAuth */; };
 		3FC2C9BB2FC7D03700F38FA7 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC2C9BA2FC7D03700F38FA7 /* FirebaseCore */; };
 		90DC9CFF2FC83D0800D1070C /* LarvaWatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		90DC9D942FC8597F00D1070C /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 90DC9D8F2FC8596200D1070C /* WatchConnectivity.framework */; };
+		90DC9DC42FC85ABB00D1070C /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 90DC9D972FC8599000D1070C /* WatchConnectivity.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +74,8 @@
 		90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LarvaWatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		90DC9CEB2FC83D0800D1070C /* LarvaWatchApp Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LarvaWatchApp Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		90DC9CF52FC83D0800D1070C /* LarvaWatchApp Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LarvaWatchApp Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90DC9D8F2FC8596200D1070C /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		90DC9D972FC8599000D1070C /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.4.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -82,6 +86,23 @@
 			);
 			target = 90B26A3D2FC325E7003BB893 /* LarvaTests */;
 		};
+		90DC9D0C2FC83F8300D1070C /* Exceptions for "Larva" folder in "LarvaWatchApp Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Model/ActivityData.swift,
+				Model/RouteCoordinate.swift,
+				Model/WorkoutData.swift,
+				WatchConnectivityManager.swift,
+			);
+			target = 90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */;
+		};
+		90DC9D1A2FC84B5700D1070C /* Exceptions for "LarvaWatchApp Watch App" folder in "LarvaWatchApp Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"LarvaWatchApp-Watch-App-Info.plist",
+			);
+			target = 90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -89,6 +110,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				3F4798F32FC81AC0001FCD7D /* Exceptions for "Larva" folder in "LarvaTests" target */,
+				90DC9D0C2FC83F8300D1070C /* Exceptions for "Larva" folder in "LarvaWatchApp Watch App" target */,
 			);
 			path = Larva;
 			sourceTree = "<group>";
@@ -105,6 +127,9 @@
 		};
 		90DC9CE02FC83D0800D1070C /* LarvaWatchApp Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				90DC9D1A2FC84B5700D1070C /* Exceptions for "LarvaWatchApp Watch App" folder in "LarvaWatchApp Watch App" target */,
+			);
 			path = "LarvaWatchApp Watch App";
 			sourceTree = "<group>";
 		};
@@ -129,6 +154,7 @@
 				3FC2C9BB2FC7D03700F38FA7 /* FirebaseCore in Frameworks */,
 				3F072EC62FC7E167003BFA92 /* FirebaseAppCheck in Frameworks */,
 				3FC2C9B92FC7D03700F38FA7 /* FirebaseAuth in Frameworks */,
+				90DC9D942FC8597F00D1070C /* WatchConnectivity.framework in Frameworks */,
 			);
 		};
 		90B26A3B2FC325E7003BB893 /* Frameworks */ = {
@@ -144,6 +170,7 @@
 		90DC9CDC2FC83D0800D1070C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				90DC9DC42FC85ABB00D1070C /* WatchConnectivity.framework in Frameworks */,
 			);
 		};
 		90DC9CE82FC83D0800D1070C /* Frameworks */ = {
@@ -162,6 +189,8 @@
 		3F072EC22FC7E151003BFA92 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				90DC9D972FC8599000D1070C /* WatchConnectivity.framework */,
+				90DC9D8F2FC8596200D1070C /* WatchConnectivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -763,12 +792,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "LarvaWatchApp Watch App/LarvaWatchApp Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V23GVR66K5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LarvaWatchApp-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LarvaWatchApp;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Larva needs access to your daily step count to calculate your passive daily progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Larva uses HealthKit to track and save your active run sessions.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Larva needs background location access to accurately track your run while your screen is off.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Larva uses your location to track your route and distance during a workout.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Larva needs access to your motion data to accurately count your steps and calculate your pace.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = MAD.Larva;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -796,12 +832,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "LarvaWatchApp Watch App/LarvaWatchApp Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V23GVR66K5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "LarvaWatchApp-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LarvaWatchApp;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Larva needs access to your daily step count to calculate your passive daily progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Larva uses HealthKit to track and save your active run sessions.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Larva needs background location access to accurately track your run while your screen is off.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Larva uses your location to track your route and distance during a workout.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Larva needs access to your motion data to accurately count your steps and calculate your pace.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = MAD.Larva;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -23,6 +23,9 @@ struct LarvaApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
+            .onAppear {
+                _ = WatchConnectivityManager.shared
+            }
     }
   }
 }
