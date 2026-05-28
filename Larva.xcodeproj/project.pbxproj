@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -38,15 +38,26 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		90B26A332FC325E7003BB893 /* Larva */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Larva; sourceTree = "<group>"; };
-		90B26A412FC325E7003BB893 /* LarvaTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LarvaTests; sourceTree = "<group>"; };
-		90B26A4B2FC325E7003BB893 /* LarvaUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LarvaUITests; sourceTree = "<group>"; };
+		90B26A332FC325E7003BB893 /* Larva */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Larva;
+			sourceTree = "<group>";
+		};
+		90B26A412FC325E7003BB893 /* LarvaTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LarvaTests;
+			sourceTree = "<group>";
+		};
+		90B26A4B2FC325E7003BB893 /* LarvaUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LarvaUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		90B26A2E2FC325E7003BB893 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				3FC2C9B72FC7D03700F38FA7 /* FirebaseAnalytics in Frameworks */,
 				3FC2C9BD2FC7D03700F38FA7 /* FirebaseFirestore in Frameworks */,
@@ -54,21 +65,16 @@
 				3FC2C9BF2FC7D03700F38FA7 /* FirebaseStorage in Frameworks */,
 				3FC2C9B92FC7D03700F38FA7 /* FirebaseAuth in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A3B2FC325E7003BB893 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A452FC325E7003BB893 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -106,8 +112,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				90B26A332FC325E7003BB893 /* Larva */,
 			);
@@ -140,8 +144,6 @@
 				90B26A412FC325E7003BB893 /* LarvaTests */,
 			);
 			name = LarvaTests;
-			packageProductDependencies = (
-			);
 			productName = LarvaTests;
 			productReference = 90B26A3E2FC325E7003BB893 /* LarvaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -163,8 +165,6 @@
 				90B26A4B2FC325E7003BB893 /* LarvaUITests */,
 			);
 			name = LarvaUITests;
-			packageProductDependencies = (
-			);
 			productName = LarvaUITests;
 			productReference = 90B26A482FC325E7003BB893 /* LarvaUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -193,7 +193,6 @@
 				};
 			};
 			buildConfigurationList = 90B26A2C2FC325E7003BB893 /* Build configuration list for PBXProject "Larva" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -205,6 +204,7 @@
 			packageReferences = (
 				3FC2C9B52FC7D03700F38FA7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 90B26A322FC325E7003BB893 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -219,48 +219,36 @@
 /* Begin PBXResourcesBuildPhase section */
 		90B26A2F2FC325E7003BB893 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A3C2FC325E7003BB893 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A462FC325E7003BB893 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		90B26A2D2FC325E7003BB893 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A3A2FC325E7003BB893 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		90B26A442FC325E7003BB893 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -278,7 +266,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		90B26A502FC325E7003BB893 /* Debug */ = {
+		90B26A502FC325E7003BB893 /* Debug configuration for PBXProject "Larva" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -342,7 +330,7 @@
 			};
 			name = Debug;
 		};
-		90B26A512FC325E7003BB893 /* Release */ = {
+		90B26A512FC325E7003BB893 /* Release configuration for PBXProject "Larva" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -399,7 +387,7 @@
 			};
 			name = Release;
 		};
-		90B26A532FC325E7003BB893 /* Debug */ = {
+		90B26A532FC325E7003BB893 /* Debug configuration for PBXNativeTarget "Larva" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -414,7 +402,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -432,7 +420,7 @@
 			};
 			name = Debug;
 		};
-		90B26A542FC325E7003BB893 /* Release */ = {
+		90B26A542FC325E7003BB893 /* Release configuration for PBXNativeTarget "Larva" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -447,7 +435,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -465,7 +453,7 @@
 			};
 			name = Release;
 		};
-		90B26A562FC325E7003BB893 /* Debug */ = {
+		90B26A562FC325E7003BB893 /* Debug configuration for PBXNativeTarget "LarvaTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -487,7 +475,7 @@
 			};
 			name = Debug;
 		};
-		90B26A572FC325E7003BB893 /* Release */ = {
+		90B26A572FC325E7003BB893 /* Release configuration for PBXNativeTarget "LarvaTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -509,7 +497,7 @@
 			};
 			name = Release;
 		};
-		90B26A592FC325E7003BB893 /* Debug */ = {
+		90B26A592FC325E7003BB893 /* Debug configuration for PBXNativeTarget "LarvaUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -529,7 +517,7 @@
 			};
 			name = Debug;
 		};
-		90B26A5A2FC325E7003BB893 /* Release */ = {
+		90B26A5A2FC325E7003BB893 /* Release configuration for PBXNativeTarget "LarvaUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -555,37 +543,33 @@
 		90B26A2C2FC325E7003BB893 /* Build configuration list for PBXProject "Larva" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				90B26A502FC325E7003BB893 /* Debug */,
-				90B26A512FC325E7003BB893 /* Release */,
+				90B26A502FC325E7003BB893 /* Debug configuration for PBXProject "Larva" */,
+				90B26A512FC325E7003BB893 /* Release configuration for PBXProject "Larva" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		90B26A522FC325E7003BB893 /* Build configuration list for PBXNativeTarget "Larva" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				90B26A532FC325E7003BB893 /* Debug */,
-				90B26A542FC325E7003BB893 /* Release */,
+				90B26A532FC325E7003BB893 /* Debug configuration for PBXNativeTarget "Larva" */,
+				90B26A542FC325E7003BB893 /* Release configuration for PBXNativeTarget "Larva" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		90B26A552FC325E7003BB893 /* Build configuration list for PBXNativeTarget "LarvaTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				90B26A562FC325E7003BB893 /* Debug */,
-				90B26A572FC325E7003BB893 /* Release */,
+				90B26A562FC325E7003BB893 /* Debug configuration for PBXNativeTarget "LarvaTests" */,
+				90B26A572FC325E7003BB893 /* Release configuration for PBXNativeTarget "LarvaTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		90B26A582FC325E7003BB893 /* Build configuration list for PBXNativeTarget "LarvaUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				90B26A592FC325E7003BB893 /* Debug */,
-				90B26A5A2FC325E7003BB893 /* Release */,
+				90B26A592FC325E7003BB893 /* Debug configuration for PBXNativeTarget "LarvaUITests" */,
+				90B26A5A2FC325E7003BB893 /* Release configuration for PBXNativeTarget "LarvaUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
