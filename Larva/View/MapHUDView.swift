@@ -119,7 +119,7 @@ struct MapHUDView: View {
 
                 VStack(spacing: 12) {
                     HStack(alignment: .bottom) {
-                        if locationManager.route != nil {
+                        if locationManager.destinationCoordinate != nil {
                             Button(action: {
                                 withAnimation {
                                     locationManager.clearRoute()
@@ -188,6 +188,11 @@ struct MapHUDView: View {
             Task {
                 await stepTracker.fetchUserDailyTarget()
             }
+        }
+        .alert("Route Unavailable", isPresented: $locationManager.showRoutingError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("We couldn't calculate a walking route to that location. It might be too far or unreachable on foot.")
         }
     }
 }

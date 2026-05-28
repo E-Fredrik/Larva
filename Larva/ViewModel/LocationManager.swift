@@ -10,7 +10,7 @@ import Combine
 import FirebaseDatabase
 import FirebaseAuth
 
-// MARK: - Dependency Protocols
+// Dependency Protocol
 
 protocol LocationProviderProtocol: AnyObject {
     var delegate: CLLocationManagerDelegate? { get set }
@@ -19,7 +19,6 @@ protocol LocationProviderProtocol: AnyObject {
     func startUpdatingLocation()
 }
 
-// Make Apple's native manager conform so it can be injected in production
 extension CLLocationManager: LocationProviderProtocol {}
 
 protocol WaypointDatabaseProtocol {
@@ -36,7 +35,7 @@ protocol RoutingProviderProtocol {
     func calculateWalkingRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) async throws -> MKRoute?
 }
 
-// MARK: - Production Implementations
+// Production Implementation
 
 // Real Firebase Auth Wrapper
 struct FirebaseAuthSession: AuthSessionProtocol {
@@ -100,9 +99,7 @@ struct AppleRoutingProvider: RoutingProviderProtocol {
     }
 }
 
-
-// MARK: - The View Model
-
+//ViewModel
 @MainActor
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
@@ -119,12 +116,13 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // Workout Tracking Properties
     @Published var workoutRoute: [CLLocationCoordinate2D] = []
+    @Published var showRoutingError: Bool = false
     private var isRecordingWorkout: Bool = false
     
     private var allGlobalWaypoints: [MapWaypoint] = []
     private var userClaimedIDs: Set<String> = []
     
-    // 1. The Designated Initializer (Used for Testing/Dependency Injection)
+    // Designated Injection
     init(
         locationProvider: LocationProviderProtocol,
         dbService: WaypointDatabaseProtocol,
@@ -141,7 +139,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         fetchDataStreams()
     }
     
-    // 2. The Convenience Initializer (Used by your SwiftUI Views automatically)
+    // SwiftUI
     @MainActor
     override convenience init() {
         self.init(
@@ -199,19 +197,18 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    // MARK: - Workout Controls
+    // Workout Control
     
     func startRecordingWorkout() {
         isRecordingWorkout = true
-        workoutRoute.removeAll() // Clear old route when starting fresh
+        workoutRoute.removeAll()
     }
     
     func stopRecordingWorkout() {
         isRecordingWorkout = false
     }
     
-    // MARK: - Waypoints & Routing
-    
+    // Waypoint and Tracking
     private func checkWaypointArrival(userLocation: CLLocation) {
         let captureRadiusInMeters: CLLocationDistance = 50.0
         
@@ -229,10 +226,10 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     private func claimWaypoint(_ waypoint: MapWaypoint) {
         guard let userId = authSession.currentUserId else { return }
-        if userClaimedIDs.contains(waypoint.id) { return } // Prevent double processing locally
+        if userClaimedIDs.contains(waypoint.id) { return }
         
         userClaimedIDs.insert(waypoint.id)
-        mergeWaypointData() // Optimistic UI update
+        mergeWaypointData()
         
         dbService.claimWaypoint(userId: userId, waypointId: waypoint.id, rewardPoints: waypoint.rewardPoints)
     }
@@ -241,13 +238,20 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let userLocation = userLocation else { return }
         
         self.destinationCoordinate = destination
+        self.showRoutingError = false
+        self.route = nil
         
         Task {
             do {
                 if let newRoute = try await routingProvider.calculateWalkingRoute(from: userLocation.coordinate, to: destination) {
                     self.route = newRoute
+                } else {
+                    self.showRoutingError = true
+                    self.clearRoute()
                 }
             } catch {
+                self.showRoutingError = true
+                self.clearRoute()
                 print("Failed to get route: \(error.localizedDescription)")
             }
         }
