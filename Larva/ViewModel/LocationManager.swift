@@ -77,6 +77,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         DispatchQueue.main.async {
             self.userLocation = location
             self.checkWaypointArrival(userLocation: location)
+
+            
+            if self.isRecordingWorkout {
+                self.workoutRoute.append(location.coordinate)
+            }
         }
     }
 
