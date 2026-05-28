@@ -10,6 +10,7 @@ import Foundation
 struct User: Identifiable, Codable {
     var id: String
     var username: String
+    var friendCode: String
     var points: Int
     var currentStreak: Int
     var dailyStepTarget: Int
@@ -22,9 +23,10 @@ struct User: Identifiable, Codable {
         case id, username, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints
     }
     
-    init(id: String, username: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:]) {
+    init(id: String, username: String, friendCode: String ,points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:]) {
         self.id = id
         self.username = username
+        self.friendCode = friendCode
         self.points = points
         self.currentStreak = currentStreak
         self.dailyStepTarget = dailyStepTarget
