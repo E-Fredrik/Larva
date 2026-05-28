@@ -32,22 +32,27 @@ class FriendViewModel: ObservableObject {
     }
 
     func sendFriendRequest(to code: String) {
-            guard code != currentUser.id else { return } // Prevent adding self
+            guard code != currentUser.friendCode else { return }
             
             Task {
                 do {
-                    let targetRef = dbRef.child("users").child(code)
-                    let snapshot = try await targetRef.getData()
+                    let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: code)
+                    let snapshot = try await query.getData()
                     
-                    guard snapshot.exists(), var targetUser = try? snapshot.data(as: User.self) else {
-                        print("User with ID \(code) not found.")
+                    guard snapshot.exists(),
+                          let children = snapshot.children.allObjects as? [DataSnapshot],
+                          let firstChild = children.first,
+                          var targetUser = try? firstChild.data(as: User.self) else {
+                        print("User with Friend Code \(code) not found.")
                         return
                     }
                     
                     // Avoid duplicate requests
                     if !targetUser.pendingFriendRequests.contains(currentUser.id) && !targetUser.friendList.contains(currentUser.id) {
                         targetUser.pendingFriendRequests.append(currentUser.id)
-                        try targetRef.setValue(from: targetUser)
+                        
+                        // Save it back to the target user's actual UID folder
+                        try dbRef.child("users").child(targetUser.id).setValue(from: targetUser)
                         print("Friend request sent to \(targetUser.username)!")
                     }
                 } catch {
@@ -97,7 +102,7 @@ class FriendViewModel: ObservableObject {
 
     private func fetchFriendsData() async {
             do {
-                // Fetch established friends
+                //Fetch established friends
                 var fetchedFriends: [User] = []
                 for friendID in currentUser.friendList {
                     let snapshot = try await dbRef.child("users").child(friendID).getData()
@@ -107,7 +112,7 @@ class FriendViewModel: ObservableObject {
                 }
                 self.friends = fetchedFriends
                 
-                // Fetch pending requests
+                //Fetch pending requests
                 var fetchedRequests: [User] = []
                 for requestID in currentUser.pendingFriendRequests {
                     let snapshot = try await dbRef.child("users").child(requestID).getData()

@@ -18,7 +18,7 @@ struct SettingsView: View {
             List {
                 Section("Appearance") {
                     Picker("Theme", selection: $isDarkMode) {
-                        Text("System").tag(false)
+                        Text("System").tag(false) // Assuming standard system behavior
                         Text("Dark").tag(true)
                     }
                     .pickerStyle(.segmented)
@@ -53,5 +53,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(viewModel: ProfileViewModel(currentUser: User(id: "1", username: "Kenjo", friendCode: "ROAM-0F0K", points: 100, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
+    SettingsView(viewModel: ProfileViewModel(currentUser: User(id: "USER-123", username: "Dave", friendCode: "DAV123", points: 2500, currentStreak: 7, dailyStepTarget: 5000, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [], claimedWaypoints: [:])))
 }
