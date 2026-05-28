@@ -113,10 +113,28 @@ class FriendViewModel: ObservableObject {
             }
         }
     }
+    
+    func removeFriend(_ user: User) {
+            currentUser.friendList.removeAll { $0 == user.id }
+            friends.removeAll { $0.id == user.id }
+            
+            Task {
+                do {
+                    try dbRef.child("users").child(currentUser.id).setValue(from: currentUser)
+                    
+                    var targetUser = user
+                    targetUser.friendList.removeAll { $0 == currentUser.id }
+                    try dbRef.child("users").child(targetUser.id).setValue(from: targetUser)
+                    
+                    print("Successfully removed \(user.username) from friends.")
+                } catch {
+                    print("Error removing friend: \(error.localizedDescription)")
+                }
+            }
+        }
 
     private func fetchFriendsData() async {
         do {
-            //Fetch established friends
             var fetchedFriends: [User] = []
             for friendID in currentUser.friendList {
                 let snapshot = try await dbRef.child("users").child(friendID)
@@ -127,7 +145,6 @@ class FriendViewModel: ObservableObject {
             }
             self.friends = fetchedFriends
 
-            //Fetch pending requests
             var fetchedRequests: [User] = []
             for requestID in currentUser.pendingFriendRequests {
                 let snapshot = try await dbRef.child("users").child(requestID)

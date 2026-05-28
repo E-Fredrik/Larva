@@ -12,13 +12,14 @@ struct FriendsView: View {
         currentUser: User(
             id: "USER-123",
             username: "Dave",
-            friendCode: "ROAM-0F0K",
+            friendCode: "DAV123",
             points: 2500,
             currentStreak: 7,
             dailyStepTarget: 5000,
             friendList: [],
             pendingFriendRequests: [],
-            unlockedCustomizations: []
+            unlockedCustomizations: [],
+            claimedWaypoints: [:]
         )
     )
 
@@ -43,20 +44,19 @@ struct FriendsView: View {
                                 id: \.element.id
                             ) { index, user in
                                 NavigationLink(
-                                    destination: FriendProfileView(user: user)
+                                    destination: FriendProfileView(viewModel: viewModel, user: user)
                                 ) {
                                     LeaderboardRow(
                                         rank: index + 1,
                                         user: user,
-                                        isCurrentUser: user.id
-                                            == viewModel.currentUser.id
+                                        isCurrentUser: user.id == viewModel.currentUser.id
                                     )
                                 }
                             }
                         } else {
                             ForEach(viewModel.friends) { friend in
                                 NavigationLink(
-                                    destination: FriendProfileView(user: friend)
+                                    destination: FriendProfileView(viewModel: viewModel, user: friend)
                                 ) {
                                     FriendRow(user: friend)
                                 }
@@ -79,7 +79,7 @@ struct FriendsView: View {
                 }
             }
         } else {
-            // Fallback on earlier versions
+            //Fallback to previous version
         }
     }
 }
