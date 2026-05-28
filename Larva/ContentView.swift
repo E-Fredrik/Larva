@@ -8,21 +8,35 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var friendVM = FriendViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
-    @StateObject var questVM = QuestViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
-    @StateObject var shopVM = ShopViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
-    
-    //Detects if it's running on iPhone, iPad, or Apple Watch
+    // 1. Initialize your Firebase Auth state manager here
+    @StateObject private var authViewModel = AuthViewModel()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     var body: some View {
-        Group{
-            if horizontalSizeClass == .regular {
-                SidebarNavigationView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
+        Group {
+            if authViewModel.userSession != nil {
+                // 2. Wait for the custom User object to be fetched from Firestore
+                if let currentUser = authViewModel.currentUser {
+                    AuthenticatedRootView(user: currentUser, sizeClass: horizontalSizeClass)
+                        .transition(.opacity)
+                } else {
+                    // Show a brief loading spinner while fetching the user's stats
+                    ProgressView("Loading Profile...")
+                        .tint(.mint)
+                        .transition(.opacity)
+                }
+            } else {
+                // 3. Show Firebase Login/Signup if not authenticated
+                LoginView()
+                    .transition(.opacity)
             }
-            else {
-                MainTabView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
-            }
-        }.tint(.mint)
+        }
+        // Smoothly animate the transitions between login, loading, and the main app
+        .animation(.easeInOut, value: authViewModel.userSession)
+        .animation(.easeInOut, value: authViewModel.currentUser?.id)
+        
+        // Inject the auth model so LoginView and SignUpView can use it
+        .environmentObject(authViewModel)
     }
 }
 
