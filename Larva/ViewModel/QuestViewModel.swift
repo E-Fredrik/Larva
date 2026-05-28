@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import FirebaseDatabase
 
 @MainActor
 class QuestViewModel: ObservableObject {
@@ -15,6 +16,7 @@ class QuestViewModel: ObservableObject {
     
     // Tracks which quests have already awarded points
     @Published var claimedQuestIDs: Set<String> = []
+    private let dbRef = Database.database().reference()
     
     init(currentUser: User) {
         self.currentUser = currentUser
@@ -58,7 +60,14 @@ class QuestViewModel: ObservableObject {
         //If the amount of claimed quests matches the total quests, increase streak
         if claimedQuestIDs.count == dailyQuests.count {
             currentUser.currentStreak += 1
-            print("Streak increased to \(currentUser.currentStreak)! 🔥")
+        }
+        Task{
+            do {
+                try dbRef.child("users").child(currentUser.id).setValue(from: currentUser)
+                print("Claimed: \(dailyQuests[index].title)! Synced to Firebase.")
+            } catch{
+                print("Error syncing quest reward: \(error.localizedDescription)")
+            }
         }
     }
 }
