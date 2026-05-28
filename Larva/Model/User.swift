@@ -16,12 +16,13 @@ struct User: Identifiable, Codable {
     var friendList: [String]
     var pendingFriendRequests: [String]
     var unlockedCustomizations: [String]
+    var claimedWaypoints: [String: Bool]
     
     enum CodingKeys: String, CodingKey {
-        case id, username, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations
+        case id, username, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints
     }
     
-    init(id: String, username: String, points: Int, currentStreak: Int, dailyStepTarget: Int, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String]) {
+    init(id: String, username: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:]) {
         self.id = id
         self.username = username
         self.points = points
@@ -30,6 +31,7 @@ struct User: Identifiable, Codable {
         self.friendList = friendList
         self.pendingFriendRequests = pendingFriendRequests
         self.unlockedCustomizations = unlockedCustomizations
+        self.claimedWaypoints = claimedWaypoints
     }
     
     init(from decoder: Decoder) throws {
@@ -38,14 +40,14 @@ struct User: Identifiable, Codable {
         id = try container.decode(String.self, forKey: .id)
         username = try container.decode(String.self, forKey: .username)
         
-        
         points = try container.decodeIfPresent(Int.self, forKey: .points) ?? 0
         currentStreak = try container.decodeIfPresent(Int.self, forKey: .currentStreak) ?? 0
-        
         dailyStepTarget = try container.decodeIfPresent(Int.self, forKey: .dailyStepTarget) ?? 5000
     
         friendList = try container.decodeIfPresent([String].self, forKey: .friendList) ?? []
         pendingFriendRequests = try container.decodeIfPresent([String].self, forKey: .pendingFriendRequests) ?? []
         unlockedCustomizations = try container.decodeIfPresent([String].self, forKey: .unlockedCustomizations) ?? []
+        
+        claimedWaypoints = try container.decodeIfPresent([String: Bool].self, forKey: .claimedWaypoints) ?? [:]
     }
 }

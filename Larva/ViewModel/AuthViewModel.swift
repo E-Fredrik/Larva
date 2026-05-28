@@ -55,7 +55,8 @@ class AuthViewModel: ObservableObject {
                 dailyStepTarget: 5000,
                 friendList: [],
                 pendingFriendRequests: [],
-                unlockedCustomizations: []
+                unlockedCustomizations: [],
+                claimedWaypoints: [:]
             )
 
             try dbRef.child("users").child(result.user.uid).setValue(
