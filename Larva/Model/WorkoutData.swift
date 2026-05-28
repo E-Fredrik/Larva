@@ -13,4 +13,5 @@ struct WorkoutData: Codable {
     var currentPace: Double
     var startDate: Date
     var isRunning: Bool
+    var route: [RouteCoordinate]
 }
