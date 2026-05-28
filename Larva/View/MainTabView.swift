@@ -5,18 +5,18 @@
 //  Created by student on 28/05/26.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct MainTabView: View {
     @ObservedObject var friendVM: FriendViewModel
     @ObservedObject var questVM: QuestViewModel
     @ObservedObject var shopVM: ShopViewModel
-    
+
     var body: some View {
-        TabView{
+        TabView {
             MapHUDView()
-                .tabItem{
+                .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }
             QuestsView(viewModel: questVM)
@@ -24,11 +24,11 @@ struct MainTabView: View {
                     Label("Quests", systemImage: "flame.fill")
                 }
             ShopView(viewModel: shopVM)
-                .tabItem{
-                 Label("Shop", systemImage: "cart.fill")
+                .tabItem {
+                    Label("Shop", systemImage: "cart.fill")
                 }
             FriendsView()
-                .tabItem{
+                .tabItem {
                     Label("Friends", systemImage: "person.2.fill")
                 }
         }
@@ -37,8 +37,41 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView(
-        friendVM: FriendViewModel(currentUser: User(id: "1", username: "Kenjo", points: 100, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])),
-        questVM: QuestViewModel(currentUser: User(id: "1", username: "Kenjo", points: 100, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])),
-        shopVM: ShopViewModel(currentUser: User(id: "1", username: "Kenjo", points: 2500, currentStreak: 100, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
+        friendVM: FriendViewModel(
+            currentUser: User(
+                id: "1",
+                username: "Kenjo",
+                points: 100,
+                currentStreak: 100,
+                dailyStepTarget: 500,
+                friendList: [],
+                pendingFriendRequests: [],
+                unlockedCustomizations: []
+            )
+        ),
+        questVM: QuestViewModel(
+            currentUser: User(
+                id: "1",
+                username: "Kenjo",
+                points: 100,
+                currentStreak: 100,
+                dailyStepTarget: 5000,
+                friendList: [],
+                pendingFriendRequests: [],
+                unlockedCustomizations: []
+            )
+        ),
+        shopVM: ShopViewModel(
+            currentUser: User(
+                id: "1",
+                username: "Kenjo",
+                points: 2500,
+                currentStreak: 100,
+                dailyStepTarget: 5000,
+                friendList: [],
+                pendingFriendRequests: [],
+                unlockedCustomizations: []
+            )
+        )
     )
 }

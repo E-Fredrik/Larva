@@ -8,7 +8,18 @@
 import SwiftUI
 
 struct FriendsView: View {
-    @StateObject var viewModel = FriendViewModel(currentUser: User(id: "USER-123", username: "Dave", points: 2500, currentStreak: 7, friendList: [], pendingFriendRequests: [], unlockedCustomizations: []))
+    @StateObject var viewModel = FriendViewModel(
+        currentUser: User(
+            id: "USER-123",
+            username: "Dave",
+            points: 2500,
+            currentStreak: 7,
+            dailyStepTarget: 5000,
+            friendList: [],
+            pendingFriendRequests: [],
+            unlockedCustomizations: []
+        )
+    )
     
     @State private var selectedTab = 0
     @State private var showingAddFriend = false

@@ -7,6 +7,8 @@
 
 import Combine
 import CoreMotion
+import FirebaseAuth
+import FirebaseDatabase
 import Foundation
 
 @MainActor
@@ -23,6 +25,8 @@ class StepTrackerViewModel: ObservableObject {
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
 
+    private let dbRef = Database.database().reference()
+
     // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
 
@@ -35,6 +39,20 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: false,
             route: []
         )
+    }
+
+    func fetchUserDailyTarget() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        do {
+            let snapshot = try await dbRef.child("users").child(userId).child(
+                "dailyStepTarget"
+            ).getData()
+            if let target = snapshot.value as? Int {
+                self.dailyTarget = target
+            }
+        } catch {
+            print("Failed to fetch target, using default.")
+        }
     }
 
     func startPassiveTracking() {
@@ -93,11 +111,11 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     private func stopActiveWorkout() {
-        // 1. Stop the high-frequency active tracking
+        
         activePedometer.stopUpdates()
         session.isRunning = false
 
-        // 2. Restart the passive tracking to resume all-day background counting
+    
         startPassiveTracking()
     }
 
@@ -119,6 +137,62 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     func attachRouteToSession(_ route: [RouteCoordinate]) {
-        self.session.route = route
-    }
+            self.session.route = route
+            
+            // Trigger the database saves automatically when the session finishes
+            Task {
+                await saveWorkoutToFirebase()
+                await syncDailyStepsToFirebase()
+            }
+        }
+        
+        private func saveWorkoutToFirebase() async {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            
+            
+            let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+            
+            do {
+                try dbRef
+                    .child("users")
+                    .child(userId)
+                    .child("workoutHistory")
+                    .child(sessionId)
+                    .setValue(from: session)
+                
+                print("Successfully saved Active Workout to Firebase.")
+            } catch {
+                print("Failed to save workout: \(error.localizedDescription)")
+            }
+        }
+        
+        func syncDailyStepsToFirebase() async {
+            guard let userId = Auth.auth().currentUser?.uid else { return }
+            
+            // Use today's date as the document ID (e.g., "2026-05-28")
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let dateString = formatter.string(from: Date())
+            
+            // Re-use your ActivityData model for the push
+            let activity = ActivityData(
+                steps: dailySteps,
+                caloriesBurned: Double(dailySteps) * 0.04,
+                distanceInMeters: Double(dailySteps) * 0.762,
+                date: Date()
+            )
+            
+            do {
+                try dbRef
+                    .child("users")
+                    .child(userId)
+                    .child("dailyActivity")
+                    .child(dateString)
+                    .setValue(from: activity)
+                
+                print("Successfully synced \(dailySteps) total daily steps to Firebase.")
+            } catch {
+                print("Failed to sync daily steps: \(error.localizedDescription)")
+            }
+        }
 }

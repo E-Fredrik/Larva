@@ -179,6 +179,13 @@ struct MapHUDView: View {
                 )
             }
         }
+        .onAppear {
+            stepTracker.startPassiveTracking()
+            // Fetch the user's specific target from Firebase
+            Task {
+                await stepTracker.fetchUserDailyTarget()
+            }
+        }
     }
 }
 
