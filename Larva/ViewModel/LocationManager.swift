@@ -3,49 +3,53 @@
 //  LarvaLawas
 //
 
-import Combine
-import CoreLocation
 import Foundation
+import CoreLocation
 import MapKit
+import Combine
 import FirebaseDatabase
 import FirebaseAuth
 
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+// MARK: - Dependency Protocols
 
-    private var manager = CLLocationManager()
-    private var dbRef = Database.database().reference()
+protocol LocationProviderProtocol: AnyObject {
+    var delegate: CLLocationManagerDelegate? { get set }
+    var desiredAccuracy: CLLocationAccuracy { get set }
+    func requestWhenInUseAuthorization()
+    func startUpdatingLocation()
+}
+
+// Make Apple's native manager conform so it can be injected in production
+extension CLLocationManager: LocationProviderProtocol {}
+
+protocol WaypointDatabaseProtocol {
+    func observeGlobalWaypoints(completion: @escaping ([MapWaypoint]) -> Void)
+    func observeUserClaimedWaypoints(userId: String, completion: @escaping (Set<String>) -> Void)
+    func claimWaypoint(userId: String, waypointId: String, rewardPoints: Int)
+}
+
+protocol AuthSessionProtocol {
+    var currentUserId: String? { get }
+}
+
+protocol RoutingProviderProtocol {
+    func calculateWalkingRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) async throws -> MKRoute?
+}
+
+// MARK: - Production Implementations
+
+// Real Firebase Auth Wrapper
+struct FirebaseAuthSession: AuthSessionProtocol {
+    var currentUserId: String? { Auth.auth().currentUser?.uid }
+}
+
+// Real Firebase Database Wrapper
+struct FirebaseWaypointDatabase: WaypointDatabaseProtocol {
+    private let dbRef = Database.database().reference()
     
-    private var currentUserId: String? {
-        return Auth.auth().currentUser?.uid
-    }
-    
-    @Published var userLocation: CLLocation?
-    @Published var route: MKRoute?
-    @Published var destinationCoordinate: CLLocationCoordinate2D?
-    
-    @Published var workoutRoute: [CLLocationCoordinate2D] = []
-    private var isRecordingWorkout: Bool = false
-    
-    @Published var waypoints: [MapWaypoint] = []
-    
-    private var allGlobalWaypoints: [MapWaypoint] = []
-    private var userClaimedIDs: Set<String> = []
-    
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.requestWhenInUseAuthorization()
-        manager.startUpdatingLocation()
-        
-        fetchDataStreams()
-    }
-    
-    private func fetchDataStreams() {
-        dbRef.child("waypoints").observe(.value) { [weak self] snapshot in
-            guard let self = self else { return }
+    func observeGlobalWaypoints(completion: @escaping ([MapWaypoint]) -> Void) {
+        dbRef.child("waypoints").observe(.value) { snapshot in
             var newWaypoints: [MapWaypoint] = []
-            
             for child in snapshot.children {
                 if let childSnapshot = child as? DataSnapshot,
                    let dict = childSnapshot.value as? [String: Any],
@@ -53,22 +57,118 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                     newWaypoints.append(waypoint)
                 }
             }
-            
-            self.allGlobalWaypoints = newWaypoints
+            completion(newWaypoints)
+        }
+    }
+    
+    func observeUserClaimedWaypoints(userId: String, completion: @escaping (Set<String>) -> Void) {
+        dbRef.child("users").child(userId).child("claimedWaypoints").observe(.value) { snapshot in
+            var claimedIDs = Set<String>()
+            for child in snapshot.children {
+                if let childSnapshot = child as? DataSnapshot,
+                   let isClaimed = childSnapshot.value as? Bool, isClaimed == true {
+                    claimedIDs.insert(childSnapshot.key)
+                }
+            }
+            completion(claimedIDs)
+        }
+    }
+    
+    func claimWaypoint(userId: String, waypointId: String, rewardPoints: Int) {
+        dbRef.child("users").child(userId).child("claimedWaypoints").updateChildValues([waypointId: true])
+        let userPointsRef = dbRef.child("users").child(userId).child("points")
+        userPointsRef.runTransactionBlock { (currentData: MutableData) -> TransactionResult in
+            var points = currentData.value as? Int ?? 0
+            points += rewardPoints
+            currentData.value = points
+            return TransactionResult.success(withValue: currentData)
+        }
+    }
+}
+
+// Real Apple Routing Wrapper
+struct AppleRoutingProvider: RoutingProviderProtocol {
+    func calculateWalkingRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) async throws -> MKRoute? {
+        let request = MKDirections.Request()
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: source))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
+        request.transportType = .walking
+        
+        let directions = MKDirections(request: request)
+        let response = try await directions.calculate()
+        return response.routes.first
+    }
+}
+
+
+// MARK: - The View Model
+
+@MainActor
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    
+    // Injected Dependencies
+    private var locationProvider: LocationProviderProtocol
+    private var dbService: WaypointDatabaseProtocol
+    private var authSession: AuthSessionProtocol
+    private var routingProvider: RoutingProviderProtocol
+    
+    @Published var userLocation: CLLocation?
+    @Published var route: MKRoute?
+    @Published var destinationCoordinate: CLLocationCoordinate2D?
+    @Published var waypoints: [MapWaypoint] = []
+    
+    // Workout Tracking Properties
+    @Published var workoutRoute: [CLLocationCoordinate2D] = []
+    private var isRecordingWorkout: Bool = false
+    
+    private var allGlobalWaypoints: [MapWaypoint] = []
+    private var userClaimedIDs: Set<String> = []
+    
+    // 1. The Designated Initializer (Used for Testing/Dependency Injection)
+    init(
+        locationProvider: LocationProviderProtocol,
+        dbService: WaypointDatabaseProtocol,
+        authSession: AuthSessionProtocol,
+        routingProvider: RoutingProviderProtocol
+    ) {
+        self.locationProvider = locationProvider
+        self.dbService = dbService
+        self.authSession = authSession
+        self.routingProvider = routingProvider
+        super.init()
+        
+        setupLocationProvider()
+        fetchDataStreams()
+    }
+    
+    // 2. The Convenience Initializer (Used by your SwiftUI Views automatically)
+    @MainActor
+    override convenience init() {
+        self.init(
+            locationProvider: CLLocationManager(),
+            dbService: FirebaseWaypointDatabase(),
+            authSession: FirebaseAuthSession(),
+            routingProvider: AppleRoutingProvider()
+        )
+    }
+    
+    private func setupLocationProvider() {
+        locationProvider.delegate = self
+        locationProvider.desiredAccuracy = kCLLocationAccuracyBest
+        locationProvider.requestWhenInUseAuthorization()
+        locationProvider.startUpdatingLocation()
+    }
+    
+    private func fetchDataStreams() {
+        dbService.observeGlobalWaypoints { [weak self] waypoints in
+            guard let self = self else { return }
+            self.allGlobalWaypoints = waypoints
             self.mergeWaypointData()
         }
         
-        if let userId = currentUserId {
-            dbRef.child("users").child(userId).child("claimedWaypoints").observe(.value) { [weak self] snapshot in
+        if let userId = authSession.currentUserId {
+            dbService.observeUserClaimedWaypoints(userId: userId) { [weak self] claimedIDs in
                 guard let self = self else { return }
-                var claimedIDs = Set<String>()
-                
-                for child in snapshot.children {
-                    if let childSnapshot = child as? DataSnapshot,
-                       let isClaimed = childSnapshot.value as? Bool, isClaimed == true {
-                        claimedIDs.insert(childSnapshot.key)
-                    }
-                }
                 self.userClaimedIDs = claimedIDs
                 self.mergeWaypointData()
             }
@@ -82,112 +182,79 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                 mergedWaypoints[i].isClaimed = true
             }
         }
-        DispatchQueue.main.async {
-            self.waypoints = mergedWaypoints
-        }
+        self.waypoints = mergedWaypoints
     }
     
-    private func markWaypointAsClaimedInFirebase(waypointId: String, rewardPoints: Int) {
-        guard let userId = currentUserId else {
-            print("Error: No user logged in to claim waypoint")
-            return
-        }
-        
-        dbRef.child("users").child(userId).child("claimedWaypoints").updateChildValues([
-            waypointId: true
-        ])
-        
-        let userPointsRef = dbRef.child("users").child(userId).child("points")
-        userPointsRef.runTransactionBlock { (currentData: MutableData) -> TransactionResult in
-            var points = currentData.value as? Int ?? 0
-            points += rewardPoints
-            currentData.value = points
-            return TransactionResult.success(withValue: currentData)
-        }
-    }
-
-    func locationManager(
-        _ manager: CLLocationManager,
-        didUpdateLocations locations: [CLLocation]
-    ) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.userLocation = location
-            self.checkWaypointArrival(userLocation: location)
-
             
+            // Track workout route if active
             if self.isRecordingWorkout {
                 self.workoutRoute.append(location.coordinate)
             }
+            
+            self.checkWaypointArrival(userLocation: location)
         }
     }
-
+    
+    // MARK: - Workout Controls
+    
     func startRecordingWorkout() {
-        workoutRoute.removeAll()
         isRecordingWorkout = true
+        workoutRoute.removeAll() // Clear old route when starting fresh
     }
-
-    func stopRecordingWorkout() -> [RouteCoordinate] {
+    
+    func stopRecordingWorkout() {
         isRecordingWorkout = false
-        // Convert MapKit coordinates to our Firebase Codable struct
-        return workoutRoute.map {
-            RouteCoordinate(lat: $0.latitude, lng: $0.longitude)
+    }
+    
+    // MARK: - Waypoints & Routing
+    
+    private func checkWaypointArrival(userLocation: CLLocation) {
+        let captureRadiusInMeters: CLLocationDistance = 50.0
+        
+        for waypoint in waypoints {
+            if waypoint.isClaimed { continue }
+            
+            let poiLocation = CLLocation(latitude: waypoint.coordinate.latitude, longitude: waypoint.coordinate.longitude)
+            let distance = userLocation.distance(from: poiLocation)
+            
+            if distance <= captureRadiusInMeters {
+                claimWaypoint(waypoint)
+            }
         }
+    }
+    
+    private func claimWaypoint(_ waypoint: MapWaypoint) {
+        guard let userId = authSession.currentUserId else { return }
+        if userClaimedIDs.contains(waypoint.id) { return } // Prevent double processing locally
+        
+        userClaimedIDs.insert(waypoint.id)
+        mergeWaypointData() // Optimistic UI update
+        
+        dbService.claimWaypoint(userId: userId, waypointId: waypoint.id, rewardPoints: waypoint.rewardPoints)
     }
     
     func calculateWalkingRoute(to destination: CLLocationCoordinate2D) {
         guard let userLocation = userLocation else { return }
-
-        let request = MKDirections.Request()
-        request.source = MKMapItem(
-            placemark: MKPlacemark(coordinate: userLocation.coordinate)
-        )
-        request.destination = MKMapItem(
-            placemark: MKPlacemark(coordinate: destination)
-        )
-        request.transportType = .walking  // Set to walking routes
-
-        let directions = MKDirections(request: request)
-        directions.calculate { [weak self] response, error in
-            guard let route = response?.routes.first else {
-                print(
-                    "Failed to get route: \(error?.localizedDescription ?? "Unknown error")"
-                )
-                return
-            }
-
-            DispatchQueue.main.async {
-                self?.route = route
-                self?.destinationCoordinate = destination
+        
+        self.destinationCoordinate = destination
+        
+        Task {
+            do {
+                if let newRoute = try await routingProvider.calculateWalkingRoute(from: userLocation.coordinate, to: destination) {
+                    self.route = newRoute
+                }
+            } catch {
+                print("Failed to get route: \(error.localizedDescription)")
             }
         }
     }
-
+    
     func clearRoute() {
         self.route = nil
         self.destinationCoordinate = nil
-    }
-
-    private func checkWaypointArrival(userLocation: CLLocation) {
-        let captureRadiusInMeters: CLLocationDistance = 100.0
-        
-        for index in waypoints.indices {
-            let waypoint = waypoints[index]
-
-            if waypoint.isClaimed { continue }
-
-            let poiLocation = CLLocation(
-                latitude: waypoint.coordinate.latitude,
-                longitude: waypoint.coordinate.longitude
-            )
-            let distance = userLocation.distance(from: poiLocation)
-            
-            if distance <= captureRadiusInMeters {
-                print("🎉 Arrived at \(waypoint.name)! Awarded \(waypoint.rewardPoints) points.")
-                
-                markWaypointAsClaimedInFirebase(waypointId: waypoint.id, rewardPoints: waypoint.rewardPoints)
-            }
-        }
     }
 }

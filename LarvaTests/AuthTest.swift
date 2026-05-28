@@ -2,124 +2,153 @@
 //  AuthTest.swift
 //  LarvaTests
 //
-//  Created by student on 28/05/26.
-//
 
 import Testing
-import FirebaseAuth
-import FirebaseDatabase
-import FirebaseCore
+import Foundation
 @testable import Larva
 
-@Suite("AuthTest", .serialized)
-
+@Suite("AuthViewModel Unit Tests")
 @MainActor
 struct AuthTest {
     
-    let testEmail = "testuser_\(UUID().uuidString.prefix(8))@example.com"
-    let testPassword = "SuperSecretPassword123!"
-    let testUsername = "IntegrationTester"
-    
-    init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
+    @Test("Initialization fetches user data if session already exists")
+    func test_init_fetchesUserData() async throws {
+        let mockUser = User(id: "USER-123", username: "Dave", points: 100, currentStreak: 5, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [], claimedWaypoints: [:])
+        
+        let authService = MockAuthService(currentUserId: "USER-123")
+        let dbService = MockUserDatabase(fetchResult: .success(mockUser))
+        
+        let sut = AuthViewModel(authService: authService, dbService: dbService)
+        await Task.yield()
+        
+        #expect(sut.currentUserId == "USER-123")
+        #expect(sut.currentUser?.username == "Dave")
+        #expect(dbService.fetchCallCount == 1)
     }
     
-    @Test("Live System: Sign Up creates a real user in Auth and Realtime Database")
-    func testLiveSignUpAndDatabaseCreation() async throws {
-        let sut = AuthViewModel()
+    @Test("Login success updates state and fetches user data")
+    func test_login_success() async throws {
+        let mockUser = User(id: "USER-999", username: "LoginTester", points: 0, currentStreak: 0, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [], claimedWaypoints: [:])
         
-        // Signup User
-        await sut.signUp(email: testEmail, password: testPassword, username: testUsername)
+        let authService = MockAuthService()
+        authService.signInResult = .success("USER-999")
+        let dbService = MockUserDatabase(fetchResult: .success(mockUser))
         
-        // View model state
-        #expect(sut.errorMessage.isEmpty, "Expected no errors during live sign up, but got: \(sut.errorMessage)")
-        #expect(sut.userSession != nil, "Expected a live FirebaseAuth session to be established")
-        #expect(sut.currentUser != nil, "Expected the local User model to be populated")
-        #expect(sut.currentUser?.username == testUsername)
+        let sut = AuthViewModel(authService: authService, dbService: dbService)
         
-        // Checks for user after signup
-        guard let uid = sut.userSession?.uid else {
-            Issue.record("User session UID is missing after sign up")
-            return
-        }
+        await sut.login(email: "test@test.com", password: "password")
         
-        let dbRef = Database.database().reference()
-        let snapshot = try await dbRef.child("users").child(uid).getData()
-        
-        #expect(snapshot.exists(), "Expected to find a newly created user node in the live Realtime Database")
-        
-        let dbUsername = snapshot.childSnapshot(forPath: "username").value as? String
-        #expect(dbUsername == testUsername, "Expected the database username to match the input")
-        
-        // Delete user
-        try await cleanUpLiveUser(uid: uid)
-    }
-    
-    @Test("Live System: Sign In fetches existing user from Realtime Database")
-    func testLiveSignInAndDataFetch() async throws {
-        let sut = AuthViewModel()
-        
-        // Create user from firebase auth
-        let authResult = try await Auth.auth().createUser(withEmail: testEmail, password: testPassword)
-        let uid = authResult.user.uid
-        
-        // Inject data
-        let dbRef = Database.database().reference()
-        try await dbRef.child("users").child(uid).setValue([
-            "id": uid,
-            "username": "LoginTester",
-            "points": 500,
-            "currentStreak": 3
-        ])
-        
-        try Auth.auth().signOut()
-        
-        // Login
-        await sut.login(email: testEmail, password: testPassword)
-        
-        // Check status from firebase
-        #expect(sut.errorMessage.isEmpty)
-        #expect(sut.userSession?.uid == uid)
-        #expect(sut.currentUser != nil)
+        #expect(sut.currentUserId == "USER-999")
         #expect(sut.currentUser?.username == "LoginTester")
-        #expect(sut.currentUser?.points == 500)
-        
-        try await cleanUpLiveUser(uid: uid)
+        #expect(sut.errorMessage.isEmpty)
+        #expect(sut.isLoading == false)
+        #expect(authService.signInCallCount == 1)
+        #expect(dbService.fetchCallCount == 1)
     }
     
-    @Test("Live System: Sign Out clears local session")
-    func testLiveSignOut() async throws {
-        let sut = AuthViewModel()
+    @Test("Login failure sets error message")
+    func test_login_failure() async throws {
+        let authService = MockAuthService()
+        authService.signInResult = .failure(MockError.networkError)
+        let sut = AuthViewModel(authService: authService, dbService: MockUserDatabase())
         
-        _ = try await Auth.auth().createUser(withEmail: testEmail, password: testPassword)
-        await sut.login(email: testEmail, password: testPassword)
+        await sut.login(email: "test@test.com", password: "password")
         
-        guard let uid = sut.userSession?.uid else {
-            Issue.record("Failed to establish session for sign out test")
-            return
-        }
+        #expect(sut.currentUserId == nil)
+        #expect(sut.currentUser == nil)
+        #expect(sut.errorMessage == MockError.networkError.localizedDescription)
+    }
+    
+    @Test("Sign Up success creates session, saves to DB, and updates user state")
+    func test_signUp_success() async throws {
+        let authService = MockAuthService()
+        authService.signUpResult = .success("NEW-USER-ID")
+        let dbService = MockUserDatabase()
+        
+        let sut = AuthViewModel(authService: authService, dbService: dbService)
+        
+        await sut.signUp(email: "new@test.com", password: "password", username: "Newbie")
+        
+        #expect(sut.currentUserId == "NEW-USER-ID")
+        #expect(sut.currentUser?.username == "Newbie")
+        #expect(sut.currentUser?.dailyStepTarget == 5000)
+        #expect(authService.signUpCallCount == 1)
+        #expect(dbService.saveCallCount == 1)
+        #expect(dbService.savedUser?.id == "NEW-USER-ID")
+    }
+    
+    @Test("Sign out clears local session properties")
+    func test_signOut_clearsState() async throws {
+        let authService = MockAuthService(currentUserId: "USER-123")
+        let sut = AuthViewModel(authService: authService, dbService: MockUserDatabase())
+        
+        // Setup initial active state
+        sut.currentUser = User(id: "USER-123", username: "Dave", points: 0, currentStreak: 0, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [], claimedWaypoints: [:])
         
         sut.signOut()
         
-        #expect(sut.userSession == nil)
+        #expect(sut.currentUserId == nil)
         #expect(sut.currentUser == nil)
-        #expect(Auth.auth().currentUser == nil, "Expected Firebase Auth global state to be cleared")
-        
-        try await Auth.auth().signIn(withEmail: testEmail, password: testPassword)
-        try await cleanUpLiveUser(uid: uid)
+        #expect(authService.signOutCallCount == 1)
+    }
+}
+
+// Mocks and helper functions
+
+enum MockError: Error, LocalizedError {
+    case networkError
+    var errorDescription: String? { return "Network connection lost." }
+}
+
+final class MockAuthService: AuthServiceProviderProtocol {
+    var currentUserId: String?
+    
+    var signInResult: Result<String, Error> = .success("mock-uid")
+    var signInCallCount = 0
+    
+    var signUpResult: Result<String, Error> = .success("mock-uid")
+    var signUpCallCount = 0
+    
+    var signOutCallCount = 0
+    
+    init(currentUserId: String? = nil) {
+        self.currentUserId = currentUserId
     }
     
+    func signIn(email: String, password: String) async throws -> String {
+        signInCallCount += 1
+        return try signInResult.get()
+    }
     
-    // Helper function to delete user just for testing
-    private func cleanUpLiveUser(uid: String) async throws {
-        let dbRef = Database.database().reference()
-        
-        try await dbRef.child("users").child(uid).removeValue()
-        
-        if let currentUser = Auth.auth().currentUser {
-            try await currentUser.delete()
-        }
+    func signUp(email: String, password: String) async throws -> String {
+        signUpCallCount += 1
+        return try signUpResult.get()
+    }
+    
+    func signOut() throws {
+        signOutCallCount += 1
+        currentUserId = nil
+    }
+}
+
+final class MockUserDatabase: UserDatabaseProviderProtocol {
+    var fetchResult: Result<User?, Error>
+    var fetchCallCount = 0
+    
+    var saveCallCount = 0
+    var savedUser: User?
+    
+    init(fetchResult: Result<User?, Error> = .success(nil)) {
+        self.fetchResult = fetchResult
+    }
+    
+    func fetchUser(uid: String) async throws -> User? {
+        fetchCallCount += 1
+        return try fetchResult.get()
+    }
+    
+    func saveUser(user: User) async throws {
+        saveCallCount += 1
+        savedUser = user
     }
 }
