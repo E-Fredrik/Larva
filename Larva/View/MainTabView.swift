@@ -27,7 +27,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Shop", systemImage: "cart.fill")
                 }
-            FriendsView()
+            FriendsView(viewModel: friendVM)
                 .tabItem {
                     Label("Friends", systemImage: "person.2.fill")
                 }

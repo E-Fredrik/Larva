@@ -8,78 +8,125 @@
 import SwiftUI
 
 struct FriendsView: View {
-    @StateObject var viewModel = FriendViewModel(
-        currentUser: User(
-            id: "USER-123",
-            username: "Dave",
-            friendCode: "DAV123",
-            points: 2500,
-            currentStreak: 7,
-            dailyStepTarget: 5000,
-            friendList: [],
-            pendingFriendRequests: [],
-            unlockedCustomizations: [],
-            claimedWaypoints: [:]
-        )
-    )
-
-    @State private var selectedTab = 0
+    @StateObject var viewModel: FriendViewModel
     @State private var showingAddFriend = false
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                VStack {
-                    Picker("Social View", selection: $selectedTab) {
-                        Text("Leaderboard").tag(0)
-                        Text("Friends List").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding()
+        NavigationStack {
+            ZStack {
+                Color(UIColor.systemGroupedBackground)
+                    .ignoresSafeArea()
 
-                    List {
-                        if selectedTab == 0 {
+                VStack(spacing: 0) {
+                    VStack(spacing: 16) {
+                        Picker(
+                            "Timeframe",
+                            selection: $viewModel.selectedTimeframe
+                        ) {
+                            ForEach(LeaderboardTimeframe.allCases, id: \.self) {
+                                timeframe in
+                                Text(timeframe.rawValue).tag(timeframe)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(LeaderboardMetric.allCases, id: \.self)
+                                { metric in
+                                    MetricPill(
+                                        title: metric.rawValue,
+                                        icon: metricIcon(for: metric),
+                                        isSelected: viewModel.selectedMetric
+                                            == metric
+                                    ) {
+                                        withAnimation(
+                                            .spring(
+                                                response: 0.3,
+                                                dampingFraction: 0.7
+                                            )
+                                        ) {
+                                            viewModel.selectedMetric = metric
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.bottom, 8)
+                    }
+                    .padding(.top, 16)
+                    .background(Color(UIColor.systemGroupedBackground))
+                    .zIndex(1)
+
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 12) {
                             ForEach(
                                 Array(viewModel.leaderboard.enumerated()),
                                 id: \.element.id
                             ) { index, user in
                                 NavigationLink(
-                                    destination: FriendProfileView(viewModel: viewModel, user: user)
+                                    destination: FriendProfileView(
+                                        viewModel: viewModel,
+                                        user: user
+                                    )
                                 ) {
                                     LeaderboardRow(
-                                        rank: index + 1,
                                         user: user,
-                                        isCurrentUser: user.id == viewModel.currentUser.id
+                                        rank: index + 1,
+                                        metric: viewModel.selectedMetric,
+                                        timeframe: viewModel.selectedTimeframe,
+                                        isCurrentUser: user.id
+                                            == viewModel.currentUser.id
                                     )
                                 }
-                            }
-                        } else {
-                            ForEach(viewModel.friends) { friend in
-                                NavigationLink(
-                                    destination: FriendProfileView(viewModel: viewModel, user: friend)
-                                ) {
-                                    FriendRow(user: friend)
-                                }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
+                        Spacer().frame(height: 120)
                     }
-                    .listStyle(.plain)
                 }
-                .navigationTitle("Social")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
                         Button(action: { showingAddFriend = true }) {
                             Image(systemName: "person.badge.plus")
-                                .foregroundColor(.mint)
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 60, height: 60)
+                                .background(Color.mint)
+                                .clipShape(Circle())
+                                .shadow(
+                                    color: Color.mint.opacity(0.4),
+                                    radius: 10,
+                                    x: 0,
+                                    y: 5
+                                )
                         }
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
                     }
                 }
-                .sheet(isPresented: $showingAddFriend) {
-                    AddFriendView(viewModel: viewModel)
-                }
             }
-        } else {
-            //Fallback to previous version
+            .navigationTitle("Leaderboard")
+            .sheet(isPresented: $showingAddFriend) {
+                AddFriendView(viewModel: viewModel)
+                    .presentationDetents([.fraction(0.85)])
+            }
+        }
+    }
+
+    private func metricIcon(for metric: LeaderboardMetric) -> String {
+        switch metric {
+        case .streaks: return "flame.fill"
+        case .steps: return "shoeprints.fill"
+        case .distance: return "map.fill"
         }
     }
 }
