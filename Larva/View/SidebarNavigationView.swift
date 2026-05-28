@@ -11,13 +11,13 @@ struct SidebarNavigationView: View {
     @ObservedObject var friendVM: FriendViewModel
     @ObservedObject var questVM: QuestViewModel
     @ObservedObject var shopVM: ShopViewModel
-    
+
     @State private var selectedTab: NavigationTab? = .map
-    
+
     enum NavigationTab {
         case map, quests, shop, friends
     }
-    
+
     var body: some View {
         if #available(iOS 16.0, *) {
             NavigationSplitView {

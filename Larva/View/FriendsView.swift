@@ -21,10 +21,10 @@ struct FriendsView: View {
             unlockedCustomizations: []
         )
     )
-    
+
     @State private var selectedTab = 0
     @State private var showingAddFriend = false
-    
+
     var body: some View {
         if #available(iOS 16.0, *) {
             NavigationStack {
@@ -35,17 +35,29 @@ struct FriendsView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding()
-                    
+
                     List {
                         if selectedTab == 0 {
-                            ForEach(Array(viewModel.leaderboard.enumerated()), id: \.element.id) { index, user in
-                                NavigationLink(destination: FriendProfileView(user: user)) {
-                                    LeaderboardRow(rank: index + 1, user: user, isCurrentUser: user.id == viewModel.currentUser.id)
+                            ForEach(
+                                Array(viewModel.leaderboard.enumerated()),
+                                id: \.element.id
+                            ) { index, user in
+                                NavigationLink(
+                                    destination: FriendProfileView(user: user)
+                                ) {
+                                    LeaderboardRow(
+                                        rank: index + 1,
+                                        user: user,
+                                        isCurrentUser: user.id
+                                            == viewModel.currentUser.id
+                                    )
                                 }
                             }
                         } else {
                             ForEach(viewModel.friends) { friend in
-                                NavigationLink(destination: FriendProfileView(user: friend)) {
+                                NavigationLink(
+                                    destination: FriendProfileView(user: friend)
+                                ) {
                                     FriendRow(user: friend)
                                 }
                             }

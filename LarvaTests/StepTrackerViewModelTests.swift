@@ -158,7 +158,7 @@ struct StepTrackerViewModelTests {
         let dbRef = Database.database().reference()
         let dummyRoute = [RouteCoordinate(lat: -7.2504, lng: 112.7688)]
         vm.attachRouteToSession(dummyRoute)
-        try await Task.sleep(nanoseconds: 2_000_000_000) //Sleeps for 2 seconds
+        try await Task.sleep(nanoseconds: 2_000_000_000)  //Sleeps for 2 seconds
         let historySnapshot = try await dbRef.child("users").child(testUserId)
             .child("workoutHistory").getData()
 

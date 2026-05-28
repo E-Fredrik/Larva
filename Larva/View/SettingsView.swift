@@ -10,11 +10,11 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: ProfileViewModel
-    
+
     @AppStorage("appearanceTheme") private var appearanceTheme = "System"
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("privacySetting") private var privacySetting = "Friends Only"
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -27,17 +27,17 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                     .padding(.vertical, 4)
                 }
-                
+
                 Section(header: Text("Account Setting")) {
                     Toggle("Notifications", isOn: $notificationsEnabled)
                         .tint(.mint)
-                    
+
                     Picker("Privacy", selection: $privacySetting) {
                         Text("Everyone").tag("Everyone")
                         Text("Friends Only").tag("Friends Only")
                         Text("No One").tag("No One")
                     }
-                    
+
                     Button(action: {
                         print("Opening Help & Support...")
                     }) {
@@ -51,7 +51,7 @@ struct SettingsView: View {
                         }
                     }
                 }
-                
+
                 Section {
                     Button(action: {
                         viewModel.logout()
@@ -84,5 +84,20 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(viewModel: ProfileViewModel(currentUser: User(id: "USER-123", username: "Dave", friendCode: "DAV123", points: 2500, currentStreak: 7, dailyStepTarget: 5000, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [], claimedWaypoints: [:])))
+    SettingsView(
+        viewModel: ProfileViewModel(
+            currentUser: User(
+                id: "USER-123",
+                username: "Dave",
+                friendCode: "DAV123",
+                points: 2500,
+                currentStreak: 7,
+                dailyStepTarget: 5000,
+                friendList: [],
+                pendingFriendRequests: [],
+                unlockedCustomizations: [],
+                claimedWaypoints: [:]
+            )
+        )
+    )
 }

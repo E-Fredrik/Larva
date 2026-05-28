@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FriendProfileView: View {
     let user: User
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
@@ -18,16 +18,22 @@ struct FriendProfileView: View {
                     .frame(width: 120, height: 120)
                     .overlay(
                         Text(String(user.username.prefix(1)).uppercased())
-                            .font(.system(size: 50, weight: .bold, design: .rounded))
+                            .font(
+                                .system(
+                                    size: 50,
+                                    weight: .bold,
+                                    design: .rounded
+                                )
+                            )
                             .foregroundColor(.mint)
                     )
                     .padding(.top, 40)
-                
+
                 VStack(spacing: 8) {
                     Text(user.username)
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                    
+
                     Text("Friend Code: \(user.id)")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -36,13 +42,23 @@ struct FriendProfileView: View {
                         .background(Color.secondary.opacity(0.1))
                         .cornerRadius(8)
                 }
-                
+
                 HStack(spacing: 20) {
-                    StatBox(title: "Streak", value: "\(user.currentStreak)", icon: "flame.fill", color: .orange)
-                    StatBox(title: "Points", value: "\(user.points)", icon: "star.fill", color: .yellow)
+                    StatBox(
+                        title: "Streak",
+                        value: "\(user.currentStreak)",
+                        icon: "flame.fill",
+                        color: .orange
+                    )
+                    StatBox(
+                        title: "Points",
+                        value: "\(user.points)",
+                        icon: "star.fill",
+                        color: .yellow
+                    )
                 }
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
         }

@@ -66,7 +66,8 @@ struct QuestsView: View {
         viewModel: QuestViewModel(
             currentUser: User(
                 id: "1",
-                username: "Kenjo", friendCode: "ROAM-0F0K",
+                username: "Kenjo",
+                friendCode: "ROAM-0F0K",
                 points: 100,
                 currentStreak: 100,
                 dailyStepTarget: 500,
