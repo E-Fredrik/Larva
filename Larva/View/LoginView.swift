@@ -59,16 +59,18 @@ struct LoginView: View {
                         await authViewModel.login(email: email, password: password)
                     }
                 } label: {
-                    if authViewModel.isLoading {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text("Sign In")
-                            .fontWeight(.semibold)
+                    ZStack {
+                        if authViewModel.isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Sign In")
+                                .fontWeight(.semibold)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
                 .background(Color.mint)
                 .foregroundColor(.white)
                 .cornerRadius(12)

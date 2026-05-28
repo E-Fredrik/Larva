@@ -60,16 +60,18 @@ struct SignUpView: View {
                     await authViewModel.signUp(email: email, password: password, username: username)
                 }
             } label: {
-                if authViewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Text("Create Account")
-                        .fontWeight(.semibold)
+                ZStack {
+                    if authViewModel.isLoading {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Create Account")
+                            .fontWeight(.semibold)
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .padding()
             }
-            .frame(maxWidth: .infinity)
-            .padding()
             .background(Color.mint)
             .foregroundColor(.white)
             .cornerRadius(12)

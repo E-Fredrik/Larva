@@ -37,9 +37,22 @@
 		90B26A482FC325E7003BB893 /* LarvaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LarvaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3F4798F32FC81AC0001FCD7D /* Exceptions for "Larva" folder in "LarvaTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = 90B26A3D2FC325E7003BB893 /* LarvaTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		90B26A332FC325E7003BB893 /* Larva */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3F4798F32FC81AC0001FCD7D /* Exceptions for "Larva" folder in "LarvaTests" target */,
+			);
 			path = Larva;
 			sourceTree = "<group>";
 		};
