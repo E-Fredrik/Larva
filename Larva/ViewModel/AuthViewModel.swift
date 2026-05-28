@@ -47,13 +47,12 @@ class AuthViewModel: ObservableObject {
                 )
                 self.userSession = result.user
 
-                // 👈 NEW: Generate the random 6-character code
                 let generatedCode = String((0..<6).map { _ in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()! })
 
                 let newUser = User(
                     id: result.user.uid,
                     username: username,
-                    friendCode: generatedCode, // 👈 NEW: Add it to the User model
+                    friendCode: generatedCode,
                     points: 0,
                     currentStreak: 0,
                     dailyStepTarget: 5000,
