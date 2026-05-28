@@ -12,20 +12,34 @@ import SwiftUI
 struct MapHUDView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var stepTracker = StepTrackerViewModel()
-    
-    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+
+    @State private var position: MapCameraPosition = .userLocation(
+        fallback: .automatic
+    )
 
     var body: some View {
         ZStack {
             MapReader { proxy in
                 Map(position: $position) {
                     UserAnnotation()
-                    
+
                     if let route = locationManager.route {
                         MapPolyline(route)
                             .stroke(.blue, lineWidth: 5)
                     }
-                    
+
+                    if !locationManager.workoutRoute.isEmpty {
+                        MapPolyline(coordinates: locationManager.workoutRoute)
+                            .stroke(
+                                .orange,
+                                style: StrokeStyle(
+                                    lineWidth: 8,
+                                    lineCap: .round,
+                                    lineJoin: .round
+                                )
+                            )
+                    }
+
                     if let destCoord = locationManager.destinationCoordinate {
                         Annotation("Destination", coordinate: destCoord) {
                             Image(systemName: "mappin.circle.fill")
@@ -34,9 +48,12 @@ struct MapHUDView: View {
                                 .background(Circle().fill(.white))
                         }
                     }
-                    
+
                     ForEach(locationManager.waypoints) { waypoint in
-                        Annotation(waypoint.name, coordinate: waypoint.coordinate) {
+                        Annotation(
+                            waypoint.name,
+                            coordinate: waypoint.coordinate
+                        ) {
                             if !waypoint.isClaimed {
                                 VStack {
                                     ZStack {
@@ -57,14 +74,17 @@ struct MapHUDView: View {
                                         .cornerRadius(8)
                                 }
                                 .onTapGesture {
-                                    locationManager.calculateWalkingRoute(to: waypoint.coordinate)
+                                    locationManager.calculateWalkingRoute(
+                                        to: waypoint.coordinate
+                                    )
                                 }
                             }
                         }
                     }
                 }
                 .onTapGesture { tapLocation in
-                    if let coordinate = proxy.convert(tapLocation, from: .local) {
+                    if let coordinate = proxy.convert(tapLocation, from: .local)
+                    {
                         locationManager.calculateWalkingRoute(to: coordinate)
                     }
                 }
@@ -72,7 +92,7 @@ struct MapHUDView: View {
             .ignoresSafeArea()
             .tint(.mint)
             .mapStyle(.standard(elevation: .realistic))
-            
+
             // HUD
             VStack {
                 HStack {
@@ -91,14 +111,13 @@ struct MapHUDView: View {
 
                 DailyStepsCard(
                     stepCount: stepTracker.dailySteps,
-                    targetSteps: Int(stepTracker.dailySteps)
+                    targetSteps: stepTracker.dailyTarget,
                 )
                 .padding(.horizontal)
 
                 Spacer()
-                
+
                 VStack(spacing: 12) {
-                    
                     HStack(alignment: .bottom) {
                         if locationManager.route != nil {
                             Button(action: {
@@ -107,35 +126,32 @@ struct MapHUDView: View {
                                 }
                             }) {
                                 Text("Cancel Navigation")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
+                                    .font(.subheadline).fontWeight(.bold)
                                     .foregroundColor(.white)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8).padding(
+                                        .horizontal,
+                                        16
+                                    )
                                     .background(Color.red.opacity(0.9))
                                     .cornerRadius(20)
-                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                             }
                         }
-                        
                         Spacer()
-                        
+
                         Button(action: {
                             withAnimation(.easeInOut) {
                                 position = .userLocation(fallback: .automatic)
                             }
                         }) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.mint)
-                                .padding(12)
-                                .background(.thickMaterial)
+                            Image(systemName: "location.fill").font(
+                                .system(size: 16)
+                            ).foregroundColor(.mint)
+                                .padding(12).background(.thickMaterial)
                                 .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
                         }
                     }
                     .padding(.horizontal)
-                    
+
                     WorkoutControlPanel(
                         isRecording: stepTracker.session.isRunning,
                         steps: stepTracker.session.steps,
@@ -148,6 +164,19 @@ struct MapHUDView: View {
                     .padding(.horizontal)
                 }
                 .padding(.bottom, 24)
+            }
+        }
+        .onChange(of: stepTracker.session.isRunning) { oldValue, isRunning in
+            if isRunning {
+                locationManager.startRecordingWorkout()
+            } else {
+                let finalizedRoute = locationManager.stopRecordingWorkout()
+
+                stepTracker.attachRouteToSession(finalizedRoute)
+
+                print(
+                    "Workout saved with \(finalizedRoute.count) location points."
+                )
             }
         }
     }

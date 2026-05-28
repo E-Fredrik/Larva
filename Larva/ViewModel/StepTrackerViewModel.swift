@@ -22,7 +22,7 @@ class StepTrackerViewModel: ObservableObject {
 
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
-    
+
     // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
 
@@ -32,7 +32,8 @@ class StepTrackerViewModel: ObservableObject {
             distanceInMeters: 0.0,
             currentPace: 0.0,
             startDate: Date(),
-            isRunning: false
+            isRunning: false,
+            route: []
         )
     }
 
@@ -41,7 +42,8 @@ class StepTrackerViewModel: ObservableObject {
 
         let midnight = Calendar.current.startOfDay(for: Date())
 
-        passivePedometer.startUpdates(from: midnight) { [weak self] data, error in
+        passivePedometer.startUpdates(from: midnight) {
+            [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
@@ -61,31 +63,31 @@ class StepTrackerViewModel: ObservableObject {
     private func startActiveWorkout() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        // 1. Save current daily steps and STOP passive updates to free up the hardware sensor
         dailyBaselineBeforeWorkout = dailySteps
         passivePedometer.stopUpdates()
 
-        // 2. Initialize the active session state
         session = WorkoutData(
             steps: 0,
             distanceInMeters: 0.0,
             currentPace: 0.0,
             startDate: Date(),
-            isRunning: true
+            isRunning: true,
+            route: []
         )
 
-        // 3. Start real-time updates specifically for the workout
-        activePedometer.startUpdates(from: session.startDate) { [weak self] data, error in
+        activePedometer.startUpdates(from: session.startDate) {
+            [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
-                // Update the active running stats
                 self.session.steps = data.numberOfSteps.intValue
-                self.session.distanceInMeters = data.distance?.doubleValue ?? 0.0
+                self.session.distanceInMeters =
+                    data.distance?.doubleValue ?? 0.0
                 self.session.currentPace = data.currentPace?.doubleValue ?? 0.0
-                
-                // Keep the overall daily target progressing while running
-                self.dailySteps = self.dailyBaselineBeforeWorkout + data.numberOfSteps.intValue
+
+                self.dailySteps =
+                    self.dailyBaselineBeforeWorkout
+                    + data.numberOfSteps.intValue
             }
         }
     }
@@ -114,5 +116,9 @@ class StepTrackerViewModel: ObservableObject {
         } else {
             return String(format: "%.0f m", session.distanceInMeters)
         }
+    }
+
+    func attachRouteToSession(_ route: [RouteCoordinate]) {
+        self.session.route = route
     }
 }
