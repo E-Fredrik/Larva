@@ -12,6 +12,7 @@
 		3FC2C9B72FC7D03700F38FA7 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC2C9B62FC7D03700F38FA7 /* FirebaseAnalytics */; };
 		3FC2C9B92FC7D03700F38FA7 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC2C9B82FC7D03700F38FA7 /* FirebaseAuth */; };
 		3FC2C9BB2FC7D03700F38FA7 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3FC2C9BA2FC7D03700F38FA7 /* FirebaseCore */; };
+		90DC9CFF2FC83D0800D1070C /* LarvaWatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,12 +30,48 @@
 			remoteGlobalIDString = 90B26A302FC325E7003BB893;
 			remoteInfo = Larva;
 		};
+		90DC9CEC2FC83D0800D1070C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90B26A292FC325E7003BB893 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90DC9CDE2FC83D0800D1070C;
+			remoteInfo = "LarvaWatchApp Watch App";
+		};
+		90DC9CF62FC83D0800D1070C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90B26A292FC325E7003BB893 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90DC9CDE2FC83D0800D1070C;
+			remoteInfo = "LarvaWatchApp Watch App";
+		};
+		90DC9CFD2FC83D0800D1070C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90B26A292FC325E7003BB893 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90DC9CDE2FC83D0800D1070C;
+			remoteInfo = "LarvaWatchApp Watch App";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		90DC9D002FC83D0800D1070C /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolder = Product;
+			files = (
+				90DC9CFF2FC83D0800D1070C /* LarvaWatchApp Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		90B26A312FC325E7003BB893 /* Larva.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Larva.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		90B26A3E2FC325E7003BB893 /* LarvaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LarvaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		90B26A482FC325E7003BB893 /* LarvaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LarvaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LarvaWatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90DC9CEB2FC83D0800D1070C /* LarvaWatchApp Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LarvaWatchApp Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		90DC9CF52FC83D0800D1070C /* LarvaWatchApp Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LarvaWatchApp Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -66,6 +103,21 @@
 			path = LarvaUITests;
 			sourceTree = "<group>";
 		};
+		90DC9CE02FC83D0800D1070C /* LarvaWatchApp Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "LarvaWatchApp Watch App";
+			sourceTree = "<group>";
+		};
+		90DC9CEE2FC83D0800D1070C /* LarvaWatchApp Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "LarvaWatchApp Watch AppTests";
+			sourceTree = "<group>";
+		};
+		90DC9CF82FC83D0800D1070C /* LarvaWatchApp Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "LarvaWatchApp Watch AppUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +141,21 @@
 			files = (
 			);
 		};
+		90DC9CDC2FC83D0800D1070C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		90DC9CE82FC83D0800D1070C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		90DC9CF22FC83D0800D1070C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -105,6 +172,9 @@
 				90B26A332FC325E7003BB893 /* Larva */,
 				90B26A412FC325E7003BB893 /* LarvaTests */,
 				90B26A4B2FC325E7003BB893 /* LarvaUITests */,
+				90DC9CE02FC83D0800D1070C /* LarvaWatchApp Watch App */,
+				90DC9CEE2FC83D0800D1070C /* LarvaWatchApp Watch AppTests */,
+				90DC9CF82FC83D0800D1070C /* LarvaWatchApp Watch AppUITests */,
 				3F072EC22FC7E151003BFA92 /* Frameworks */,
 				90B26A322FC325E7003BB893 /* Products */,
 			);
@@ -116,6 +186,9 @@
 				90B26A312FC325E7003BB893 /* Larva.app */,
 				90B26A3E2FC325E7003BB893 /* LarvaTests.xctest */,
 				90B26A482FC325E7003BB893 /* LarvaUITests.xctest */,
+				90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */,
+				90DC9CEB2FC83D0800D1070C /* LarvaWatchApp Watch AppTests.xctest */,
+				90DC9CF52FC83D0800D1070C /* LarvaWatchApp Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -130,8 +203,12 @@
 				90B26A2D2FC325E7003BB893 /* Sources */,
 				90B26A2E2FC325E7003BB893 /* Frameworks */,
 				90B26A2F2FC325E7003BB893 /* Resources */,
+				90DC9D002FC83D0800D1070C /* Embed Watch Content */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				90DC9CFE2FC83D0800D1070C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				90B26A332FC325E7003BB893 /* Larva */,
@@ -190,6 +267,66 @@
 			productReference = 90B26A482FC325E7003BB893 /* LarvaUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90DC9D072FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch App" */;
+			buildPhases = (
+				90DC9CDB2FC83D0800D1070C /* Sources */,
+				90DC9CDC2FC83D0800D1070C /* Frameworks */,
+				90DC9CDD2FC83D0800D1070C /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				90DC9CE02FC83D0800D1070C /* LarvaWatchApp Watch App */,
+			);
+			name = "LarvaWatchApp Watch App";
+			productName = "LarvaWatchApp Watch App";
+			productReference = 90DC9CDF2FC83D0800D1070C /* LarvaWatchApp Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		90DC9CEA2FC83D0800D1070C /* LarvaWatchApp Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90DC9D082FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch AppTests" */;
+			buildPhases = (
+				90DC9CE72FC83D0800D1070C /* Sources */,
+				90DC9CE82FC83D0800D1070C /* Frameworks */,
+				90DC9CE92FC83D0800D1070C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				90DC9CED2FC83D0800D1070C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				90DC9CEE2FC83D0800D1070C /* LarvaWatchApp Watch AppTests */,
+			);
+			name = "LarvaWatchApp Watch AppTests";
+			productName = "LarvaWatchApp Watch AppTests";
+			productReference = 90DC9CEB2FC83D0800D1070C /* LarvaWatchApp Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		90DC9CF42FC83D0800D1070C /* LarvaWatchApp Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90DC9D092FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */;
+			buildPhases = (
+				90DC9CF12FC83D0800D1070C /* Sources */,
+				90DC9CF22FC83D0800D1070C /* Frameworks */,
+				90DC9CF32FC83D0800D1070C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				90DC9CF72FC83D0800D1070C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				90DC9CF82FC83D0800D1070C /* LarvaWatchApp Watch AppUITests */,
+			);
+			name = "LarvaWatchApp Watch AppUITests";
+			productName = "LarvaWatchApp Watch AppUITests";
+			productReference = 90DC9CF52FC83D0800D1070C /* LarvaWatchApp Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -210,6 +347,17 @@
 					90B26A472FC325E7003BB893 = {
 						CreatedOnToolsVersion = 26.4.1;
 						TestTargetID = 90B26A302FC325E7003BB893;
+					};
+					90DC9CDE2FC83D0800D1070C = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					90DC9CEA2FC83D0800D1070C = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 90DC9CDE2FC83D0800D1070C;
+					};
+					90DC9CF42FC83D0800D1070C = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 90DC9CDE2FC83D0800D1070C;
 					};
 				};
 			};
@@ -233,6 +381,9 @@
 				90B26A302FC325E7003BB893 /* Larva */,
 				90B26A3D2FC325E7003BB893 /* LarvaTests */,
 				90B26A472FC325E7003BB893 /* LarvaUITests */,
+				90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */,
+				90DC9CEA2FC83D0800D1070C /* LarvaWatchApp Watch AppTests */,
+				90DC9CF42FC83D0800D1070C /* LarvaWatchApp Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -249,6 +400,21 @@
 			);
 		};
 		90B26A462FC325E7003BB893 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		90DC9CDD2FC83D0800D1070C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		90DC9CE92FC83D0800D1070C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		90DC9CF32FC83D0800D1070C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -271,6 +437,21 @@
 			files = (
 			);
 		};
+		90DC9CDB2FC83D0800D1070C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		90DC9CE72FC83D0800D1070C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		90DC9CF12FC83D0800D1070C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -283,6 +464,21 @@
 			isa = PBXTargetDependency;
 			target = 90B26A302FC325E7003BB893 /* Larva */;
 			targetProxy = 90B26A492FC325E7003BB893 /* PBXContainerItemProxy */;
+		};
+		90DC9CED2FC83D0800D1070C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */;
+			targetProxy = 90DC9CEC2FC83D0800D1070C /* PBXContainerItemProxy */;
+		};
+		90DC9CF72FC83D0800D1070C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */;
+			targetProxy = 90DC9CF62FC83D0800D1070C /* PBXContainerItemProxy */;
+		};
+		90DC9CFE2FC83D0800D1070C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90DC9CDE2FC83D0800D1070C /* LarvaWatchApp Watch App */;
+			targetProxy = 90DC9CFD2FC83D0800D1070C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -562,6 +758,162 @@
 			};
 			name = Release;
 		};
+		90DC9D012FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LarvaWatchApp;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = MAD.Larva;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MAD.Larva.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Debug;
+		};
+		90DC9D022FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch App" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LarvaWatchApp;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = MAD.Larva;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = MAD.Larva.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
+		90DC9D032FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch AppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "MAD.LarvaWatchApp-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LarvaWatchApp Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LarvaWatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Debug;
+		};
+		90DC9D042FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch AppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "MAD.LarvaWatchApp-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LarvaWatchApp Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LarvaWatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
+		90DC9D052FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "MAD.LarvaWatchApp-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "LarvaWatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Debug;
+		};
+		90DC9D062FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V23GVR66K5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "MAD.LarvaWatchApp-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "LarvaWatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -594,6 +946,30 @@
 			buildConfigurations = (
 				90B26A592FC325E7003BB893 /* Debug configuration for PBXNativeTarget "LarvaUITests" */,
 				90B26A5A2FC325E7003BB893 /* Release configuration for PBXNativeTarget "LarvaUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		90DC9D072FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90DC9D012FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch App" */,
+				90DC9D022FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch App" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		90DC9D082FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90DC9D032FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch AppTests" */,
+				90DC9D042FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch AppTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		90DC9D092FC83D0800D1070C /* Build configuration list for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				90DC9D052FC83D0800D1070C /* Debug configuration for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */,
+				90DC9D062FC83D0800D1070C /* Release configuration for PBXNativeTarget "LarvaWatchApp Watch AppUITests" */,
 			);
 			defaultConfigurationName = Release;
 		};
