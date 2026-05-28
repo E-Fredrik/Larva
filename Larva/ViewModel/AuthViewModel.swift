@@ -1,101 +1,35 @@
-//
-//  AuthViewModel.swift
-//  LarvaLawas
-//
-
 import Combine
 import FirebaseAuth
 import FirebaseDatabase
 import SwiftUI
 
-// Dependency Protocols
-protocol AuthServiceProviderProtocol {
-    var currentUserId: String? { get }
-    func signIn(email: String, password: String) async throws -> String
-    func signUp(email: String, password: String) async throws -> String
-    func signOut() throws
-}
-
-protocol UserDatabaseProviderProtocol {
-    func fetchUser(uid: String) async throws -> User?
-    func saveUser(user: User) async throws
-}
-
-// Implementations
-
-struct FirebaseAuthProvider: AuthServiceProviderProtocol {
-    var currentUserId: String? { Auth.auth().currentUser?.uid }
-    
-    func signIn(email: String, password: String) async throws -> String {
-        let result = try await Auth.auth().signIn(withEmail: email, password: password)
-        return result.user.uid
-    }
-    
-    func signUp(email: String, password: String) async throws -> String {
-        let result = try await Auth.auth().createUser(withEmail: email, password: password)
-        return result.user.uid
-    }
-    
-    func signOut() throws {
-        try Auth.auth().signOut()
-    }
-}
-
-struct FirebaseUserDatabaseProvider: UserDatabaseProviderProtocol {
-    private let dbRef = Database.database().reference()
-    
-    func fetchUser(uid: String) async throws -> User? {
-        let snapshot = try await dbRef.child("users").child(uid).getData()
-        if snapshot.exists() {
-            return try snapshot.data(as: User.self)
-        }
-        return nil
-    }
-    
-    func saveUser(user: User) async throws {
-        try dbRef.child("users").child(user.id).setValue(from: user)
-    }
-}
-
-// ViewModel
-
 @MainActor
 class AuthViewModel: ObservableObject {
-    
-    @Published var currentUserId: String?
+    @Published var userSession: FirebaseAuth.User?
     @Published var currentUser: User?
     @Published var errorMessage: String = ""
     @Published var isLoading: Bool = false
 
-    private let authService: AuthServiceProviderProtocol
-    private let dbService: UserDatabaseProviderProtocol
+    // Realtime Database Reference
+    private let dbRef = Database.database().reference()
+    private var cancellables = Set<AnyCancellable>()
 
-    // Testing Initializers
-    init(authService: AuthServiceProviderProtocol, dbService: UserDatabaseProviderProtocol) {
-        self.authService = authService
-        self.dbService = dbService
-        self.currentUserId = authService.currentUserId
-        
+    init() {
+        userSession = Auth.auth().currentUser
         Task {
             await fetchUserData()
         }
-    }
-    
-    // Swift UI initializers
-    @MainActor
-    convenience init() {
-        self.init(
-            authService: FirebaseAuthProvider(),
-            dbService: FirebaseUserDatabaseProvider()
-        )
     }
 
     func login(email: String, password: String) async {
         isLoading = true
         errorMessage = ""
         do {
-            let uid = try await authService.signIn(email: email, password: password)
-            self.currentUserId = uid
+            let result = try await Auth.auth().signIn(
+                withEmail: email,
+                password: password
+            )
+            self.userSession = result.user
             await fetchUserData()
         } catch {
             self.errorMessage = error.localizedDescription
@@ -104,26 +38,29 @@ class AuthViewModel: ObservableObject {
     }
 
     func signUp(email: String, password: String, username: String) async {
-        isLoading = true
-        errorMessage = ""
-        do {
-            let uid = try await authService.signUp(email: email, password: password)
-            self.currentUserId = uid
+            isLoading = true
+            errorMessage = ""
+            do {
+                let result = try await Auth.auth().createUser(
+                    withEmail: email,
+                    password: password
+                )
+                self.userSession = result.user
 
-            let newUser = User(
-                id: uid,
-                username: username,
-                points: 0,
-                currentStreak: 0,
-                dailyStepTarget: 5000,
-                friendList: [],
-                pendingFriendRequests: [],
-                unlockedCustomizations: [],
-                claimedWaypoints: [:]
-            )
+                let generatedCode = String((0..<6).map { _ in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()! })
 
-            try await dbService.saveUser(user: newUser)
-            self.currentUser = newUser
+                let newUser = User(
+                    id: result.user.uid,
+                    username: username,
+                    friendCode: generatedCode,
+                    points: 0,
+                    currentStreak: 0,
+                    dailyStepTarget: 5000,
+                    friendList: [],
+                    pendingFriendRequests: [],
+                    unlockedCustomizations: [],
+                    claimedWaypoints: [:]
+                )
 
                 try dbRef.child("users").child(result.user.uid).setValue(
                     from: newUser
@@ -138,8 +75,8 @@ class AuthViewModel: ObservableObject {
 
     func signOut() {
         do {
-            try authService.signOut()
-            self.currentUserId = nil
+            try Auth.auth().signOut()
+            self.userSession = nil
             self.currentUser = nil
         } catch {
             print("Failed to sign out: \(error.localizedDescription)")
@@ -147,10 +84,14 @@ class AuthViewModel: ObservableObject {
     }
 
     private func fetchUserData() async {
-        guard let uid = currentUserId else { return }
+        guard let uid = userSession?.uid else { return }
         do {
-            if let user = try await dbService.fetchUser(uid: uid) {
-                self.currentUser = user
+
+            let snapshot = try await dbRef.child("users").child(uid).getData()
+
+            if snapshot.exists() {
+
+                self.currentUser = try snapshot.data(as: User.self)
             }
         } catch {
             print("Error fetching user data: \(error.localizedDescription)")
