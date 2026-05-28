@@ -22,6 +22,9 @@ class StepTrackerViewModel: ObservableObject {
 
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
+    
+    // Tracks the steps taken before a workout starts to keep the daily total accurate
+    private var dailyBaselineBeforeWorkout: Int = 0
 
     init() {
         self.session = WorkoutData(
@@ -36,11 +39,9 @@ class StepTrackerViewModel: ObservableObject {
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        //Finds the start of the day so that it can start tracking for the current day
         let midnight = Calendar.current.startOfDay(for: Date())
 
-        passivePedometer.startUpdates(from: midnight) {
-            [weak self] data, error in
+        passivePedometer.startUpdates(from: midnight) { [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
@@ -60,6 +61,11 @@ class StepTrackerViewModel: ObservableObject {
     private func startActiveWorkout() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
+        // 1. Save current daily steps and STOP passive updates to free up the hardware sensor
+        dailyBaselineBeforeWorkout = dailySteps
+        passivePedometer.stopUpdates()
+
+        // 2. Initialize the active session state
         session = WorkoutData(
             steps: 0,
             distanceInMeters: 0.0,
@@ -68,36 +74,32 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: true
         )
 
-        activePedometer.startUpdates(from: session.startDate) {
-            [weak self] data, error in
+        // 3. Start real-time updates specifically for the workout
+        activePedometer.startUpdates(from: session.startDate) { [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
+                // Update the active running stats
                 self.session.steps = data.numberOfSteps.intValue
-                self.session.distanceInMeters =
-                    data.distance?.doubleValue ?? 0.0
-                self.session.currentPace =
-                    data.currentPace?.doubleValue ?? 0.0
+                self.session.distanceInMeters = data.distance?.doubleValue ?? 0.0
+                self.session.currentPace = data.currentPace?.doubleValue ?? 0.0
+                
+                // Keep the overall daily target progressing while running
+                self.dailySteps = self.dailyBaselineBeforeWorkout + data.numberOfSteps.intValue
             }
         }
     }
 
     private func stopActiveWorkout() {
+        // 1. Stop the high-frequency active tracking
         activePedometer.stopUpdates()
         session.isRunning = false
 
-        let midnight = Calendar.current.startOfDay(for: Date())
-        passivePedometer.queryPedometerData(from: midnight, to: Date()) {
-            [weak self] data, _ in
-            if let data = data {
-                Task { @MainActor in
-                    self?.dailySteps = data.numberOfSteps.intValue
-                }
-            }
-        }
+        // 2. Restart the passive tracking to resume all-day background counting
+        startPassiveTracking()
     }
 
-    //Formats pace since apple natively saves it in seconds per meter, we want to display it as minutes per kilometer
+    // Formats pace since apple natively saves it in seconds per meter, we want to display it as minutes per kilometer
     var formattedPace: String {
         guard session.currentPace > 0 else { return "0:00" }
         let secondsPerKm = session.currentPace * 1000
