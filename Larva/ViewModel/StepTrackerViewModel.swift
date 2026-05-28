@@ -60,6 +60,16 @@ class StepTrackerViewModel: ObservableObject {
 
         let midnight = Calendar.current.startOfDay(for: Date())
 
+        //Makes sure we get the total steps for the day right away, instead of waiting for the first update to trigger
+        passivePedometer.queryPedometerData(from: midnight, to: Date()) {
+            [weak self] data, error in
+            if let data = data, error == nil {
+                Task { @MainActor in
+                    self?.dailySteps = data.numberOfSteps.intValue
+                }
+            }
+        }
+
         passivePedometer.startUpdates(from: midnight) {
             [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
@@ -133,7 +143,8 @@ class StepTrackerViewModel: ObservableObject {
         if session.distanceInMeters >= 1000 {
             return String(format: "%.2f km", session.distanceInMeters / 1000)
         } else {
-            return String(format: "%.0f m", session.distanceInMeters)
+            let roundedMeters = session.distanceInMeters.rounded()
+            return String(format: "%.0f m", roundedMeters)
         }
     }
 

@@ -74,7 +74,50 @@ struct StepTrackerViewModelTests {
         // Test zero state
         #expect(vm.formattedPace == "0:00")
 
-        vm.test_injectMetrics(passiveSteps: 0, activeSteps: 10, distance: 10, pace: 0.33)
+        vm.test_injectMetrics(
+            passiveSteps: 0,
+            activeSteps: 10,
+            distance: 10,
+            pace: 0.33
+        )
         #expect(vm.formattedPace == "5:30")
+    }
+
+    //5. Toggle workout session
+    @Test("Toggle Workout changes session running state")
+    func toggleWorkoutStartsAndStopsCorrectly() {
+        #expect(vm.session.isRunning == false)
+
+        vm.toggleWorkoutSession()
+        #expect(vm.session.isRunning == true)
+
+        vm.toggleWorkoutSession()
+        #expect(vm.session.isRunning == false)
+    }
+
+    //6. Step Combination Logic
+    @Test("Daily steps should combine passive and active steps correctly")
+    func combinedStepTracking() {
+        vm.test_injectMetrics(
+            passiveSteps: 2000,
+            activeSteps: 0,
+            distance: 0,
+            pace: 0
+        )
+
+        vm.toggleWorkoutSession()
+
+        vm.test_injectMetrics(
+                passiveSteps: 2000,
+                activeSteps: 1500,
+                distance: 1000,
+                pace: 0.3
+            )
+
+        #expect(vm.session.steps == 1500, "Session steps failed.")
+        #expect(
+            vm.dailySteps == 3500,
+            "Daily steps should combine the 2000 passive + 1500 active steps."
+        )
     }
 }
