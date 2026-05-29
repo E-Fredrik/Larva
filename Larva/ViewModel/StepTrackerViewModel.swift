@@ -69,15 +69,33 @@ class StepTrackerViewModel: ObservableObject {
 
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
-
     private let dbRef = Database.database().reference()
-    
     private var cancellables = Set<AnyCancellable>()
 
     // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
-    
     private var currentSessionId: String = ""
+
+    private var lastRewardedPassiveSteps: Int {
+        get {
+            UserDefaults.standard.integer(forKey: "lastRewardedPassiveSteps")
+        }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: "lastRewardedPassiveSteps"
+            )
+        }
+    }
+    private var hasRewardedDailyGoal: Bool {
+        get { UserDefaults.standard.bool(forKey: "hasRewardedDailyGoal") }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "hasRewardedDailyGoal")
+        }
+    }
+
+//    private var lastRewardedPassiveSteps: Int = 0
+//    private var hasRewardedDailyGoal: Bool = false
 
     init() {
         self.session = WorkoutData(
@@ -88,13 +106,13 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: false,
             route: []
         )
-        
+
         WatchConnectivityManager.shared.$remoteWorkoutState
             .compactMap({ $0 })
             .receive(on: RunLoop.main)
             .sink { [weak self] isRunning in
                 guard let self = self else { return }
-                
+
                 if self.session.isRunning != isRunning {
                     if isRunning {
                         self.startActiveWorkout(isRemoteCommand: true)
@@ -124,12 +142,13 @@ class StepTrackerViewModel: ObservableObject {
 
         let midnight = Calendar.current.startOfDay(for: Date())
 
-        //Makes sure we get the total steps for the day right away, instead of waiting for the first update to trigger
+        // Makes sure we get the total steps for the day right away
         passivePedometer.queryPedometerData(from: midnight, to: Date()) {
             [weak self] data, error in
             if let data = data, error == nil {
                 Task { @MainActor in
                     self?.dailySteps = data.numberOfSteps.intValue
+                    await self?.syncDailyStepsToFirebase()
                 }
             }
         }
@@ -140,6 +159,9 @@ class StepTrackerViewModel: ObservableObject {
 
             Task { @MainActor in
                 self.dailySteps = data.numberOfSteps.intValue
+
+                // Trigger the background points check automatically
+                await self.syncDailyStepsToFirebase()
             }
         }
     }
@@ -168,7 +190,7 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: true,
             route: []
         )
-        
+
         if !isRemoteCommand {
             WatchConnectivityManager.shared.sendWorkoutState(isRunning: true)
         }
@@ -189,23 +211,20 @@ class StepTrackerViewModel: ObservableObject {
             }
         }
         self.currentSessionId = "SESSION-\(UUID().uuidString.prefix(8))"
-        WatchConnectivityManager.shared.sendWorkoutState(isRunning: true)
     }
 
     private func stopActiveWorkout(isRemoteCommand: Bool = false) {
-
         activePedometer.stopUpdates()
         session.isRunning = false
-        
+
         if !isRemoteCommand {
             WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
         }
 
         startPassiveTracking()
-        WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
     }
 
-    // Formats pace since apple natively saves it in seconds per meter, we want to display it as minutes per kilometer
+    // Formats pace
     var formattedPace: String {
         guard session.currentPace > 0 else { return "0:00" }
         let secondsPerKm = session.currentPace * 1000
@@ -226,17 +245,56 @@ class StepTrackerViewModel: ObservableObject {
     func attachRouteToSession(_ route: [RouteCoordinate]) {
         self.session.route = route
 
-        // Trigger the database saves automatically when the session finishes
+        // Trigger the database saves automatically when the session map finishes
         Task {
+            await awardActiveWorkoutPoints()
             await saveWorkoutToFirebase()
             await syncDailyStepsToFirebase()
+        }
+    }
+
+    private func awardActiveWorkoutPoints() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        let activeSteps = self.session.steps
+        guard activeSteps > 0 else { return }
+
+        let pace = self.session.currentPace
+        let speed = pace > 0 ? (1.0 / pace) : 1.0
+
+        var paceMultiplier = 1.0
+        if speed >= 2.5 {
+            paceMultiplier = 2.0
+        } else if speed >= 1.5 {
+            paceMultiplier = 1.5
+        }
+
+        let basePoints = Double(activeSteps) / 20.0
+        let totalActivePoints = Int(basePoints * paceMultiplier)
+
+        guard totalActivePoints > 0 else { return }
+
+        do {
+            try await dbRef.child("users").child(userId).child("points")
+                .setValue(
+                    ServerValue.increment(NSNumber(value: totalActivePoints))
+                )
+            print(
+                "🔥 Awarded \(totalActivePoints) Active Points! (Multiplier: \(paceMultiplier)x)"
+            )
+        } catch {
+            print(
+                "Failed to award active points: \(error.localizedDescription)"
+            )
         }
     }
 
     private func saveWorkoutToFirebase() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
-        let sessionId = self.currentSessionId.isEmpty ? "SESSION-\(UUID().uuidString.prefix(8))" : self.currentSessionId
+        let sessionId =
+            self.currentSessionId.isEmpty
+            ? "SESSION-\(UUID().uuidString.prefix(8))" : self.currentSessionId
 
         do {
             try dbRef
@@ -255,12 +313,40 @@ class StepTrackerViewModel: ObservableObject {
     func syncDailyStepsToFirebase() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
-        // Use today's date as the document ID (e.g., "2026-05-28")
+        let unrewardedSteps = self.dailySteps - self.lastRewardedPassiveSteps
+
+        if unrewardedSteps >= 100 {
+            var pointsToAward = unrewardedSteps / 100
+
+            if self.dailySteps >= self.dailyTarget && !self.hasRewardedDailyGoal
+                && self.dailyTarget > 0
+            {
+                pointsToAward += 250
+                self.hasRewardedDailyGoal = true
+                print(
+                    "🌟 \(self.dailyTarget) Daily Target Reached! 250 Bonus points awarded!"
+                )
+            }
+
+            do {
+                try await dbRef.child("users").child(userId).child("points")
+                    .setValue(
+                        ServerValue.increment(NSNumber(value: pointsToAward))
+                    )
+
+                self.lastRewardedPassiveSteps += (pointsToAward * 100)
+                print("🚶‍♂️ Awarded \(pointsToAward) Passive Points!")
+            } catch {
+                print(
+                    "Failed to sync passive points: \(error.localizedDescription)"
+                )
+            }
+        }
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let dateString = formatter.string(from: Date())
 
-        // Re-use your ActivityData model for the push
         let activity = ActivityData(
             steps: dailySteps,
             caloriesBurned: Double(dailySteps) * 0.04,
