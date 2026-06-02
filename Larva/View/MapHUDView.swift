@@ -95,19 +95,6 @@ struct MapHUDView: View {
 
             // HUD
             VStack {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Steps: 4")
-                            .font(.headline)
-                        Text("Distance: 20m")
-                            .font(.subheadline)
-                    }
-                    Spacer()
-                }
-                .padding()
-                .background(.thinMaterial)
-                .cornerRadius(16)
-                .padding()
 
                 DailyStepsCard(
                     stepCount: stepTracker.dailySteps,

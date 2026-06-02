@@ -76,26 +76,25 @@ class StepTrackerViewModel: ObservableObject {
     private var dailyBaselineBeforeWorkout: Int = 0
     private var currentSessionId: String = ""
 
-    private var lastRewardedPassiveSteps: Int {
-        get {
-            UserDefaults.standard.integer(forKey: "lastRewardedPassiveSteps")
-        }
-        set {
-            UserDefaults.standard.set(
-                newValue,
-                forKey: "lastRewardedPassiveSteps"
-            )
-        }
-    }
-    private var hasRewardedDailyGoal: Bool {
-        get { UserDefaults.standard.bool(forKey: "hasRewardedDailyGoal") }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "hasRewardedDailyGoal")
-        }
+    // Helper to get the current logged-in user ID safely
+    private var currentUserId: String {
+        Auth.auth().currentUser?.uid ?? "guest"
     }
 
-//    private var lastRewardedPassiveSteps: Int = 0
-//    private var hasRewardedDailyGoal: Bool = false
+    private var lastTrackedDateString: String {
+        get { UserDefaults.standard.string(forKey: "\(currentUserId)_lastTrackedDateString") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastTrackedDateString") }
+    }
+
+    private var lastRewardedPassiveSteps: Int {
+        get { UserDefaults.standard.integer(forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
+        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
+    }
+
+    private var hasRewardedDailyGoal: Bool {
+        get { UserDefaults.standard.bool(forKey: "\(currentUserId)_hasRewardedDailyGoal") }
+        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_hasRewardedDailyGoal") }
+    }
 
     init() {
         self.session = WorkoutData(
@@ -106,6 +105,13 @@ class StepTrackerViewModel: ObservableObject {
             isRunning: false,
             route: []
         )
+
+        // Listen for midnight rollovers
+        NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.startPassiveTracking()
+            }.store(in: &cancellables)
 
         WatchConnectivityManager.shared.$remoteWorkoutState
             .compactMap({ $0 })
@@ -122,6 +128,22 @@ class StepTrackerViewModel: ObservableObject {
                 }
             }.store(in: &cancellables)
     }
+    
+    private func checkAndResetNewDay() -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let currentDateString = formatter.string(from: Date())
+        
+        // If the date string doesn't match, a new day has started for this user
+        if lastTrackedDateString != currentDateString {
+            lastRewardedPassiveSteps = 0
+            hasRewardedDailyGoal = false
+            dailySteps = 0
+            lastTrackedDateString = currentDateString
+            return true
+        }
+        return false
+    }
 
     func fetchUserDailyTarget() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -131,19 +153,29 @@ class StepTrackerViewModel: ObservableObject {
             ).getData()
             if let target = snapshot.value as? Int {
                 self.dailyTarget = target
+            } else {
+                self.dailyTarget = 5000 // Reset to clean default if new user has no record
             }
         } catch {
             print("Failed to fetch target, using default.")
+            self.dailyTarget = 5000
         }
     }
 
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        let midnight = Calendar.current.startOfDay(for: Date())
+        // 1. Check if the day changed before we start tracking
+        _ = checkAndResetNewDay()
+
+        let today = Date()
+        let midnight = Calendar.current.startOfDay(for: today)
+
+        // 2. Stop any old updates so we don't get double callbacks
+        passivePedometer.stopUpdates()
 
         // Makes sure we get the total steps for the day right away
-        passivePedometer.queryPedometerData(from: midnight, to: Date()) {
+        passivePedometer.queryPedometerData(from: midnight, to: today) {
             [weak self] data, error in
             if let data = data, error == nil {
                 Task { @MainActor in
@@ -158,6 +190,12 @@ class StepTrackerViewModel: ObservableObject {
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
+                // 3. Catch day changes that happen while updates stream in the background
+                if self.checkAndResetNewDay() {
+                    self.startPassiveTracking() // Restart with the new midnight
+                    return
+                }
+
                 self.dailySteps = data.numberOfSteps.intValue
 
                 // Trigger the background points check automatically

@@ -31,6 +31,10 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Friends", systemImage: "person.2.fill")
                 }
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.crop.circle.fill")
+                }
         }
     }
 }
