@@ -19,6 +19,7 @@ struct FriendsView: View {
                     .ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
+                        
                         VStack(spacing: 12) {
                             Image(systemName: "person.2.circle.fill")
                                 .font(.system(size: 60))
@@ -37,6 +38,7 @@ struct FriendsView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.top, 20)
+                        
                         if !viewModel.pendingRequests.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Pending Requests (\(viewModel.pendingRequests.count))")
@@ -61,19 +63,30 @@ struct FriendsView: View {
                                 }
                             }
                         }
+                        
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Leaderboard")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .padding(.horizontal)
-                        Picker("Timeframe", selection: $viewModel.selectedTimeframe) {
-                                ForEach(LeaderboardTimeframe.allCases, id: \.self) {
-                                    timeframe in
-                                    Text(timeframe.rawValue).tag(timeframe)
+                            
+                            VStack(spacing: 12) {
+                                Picker("Timeframe", selection: $viewModel.selectedTimeframe) {
+                                    ForEach(LeaderboardTimeframe.allCases, id: \.self) { timeframe in
+                                        Text(timeframe.rawValue).tag(timeframe)
+                                    }
                                 }
+                                .pickerStyle(.segmented)
+                                
+                                Picker("Metric", selection: $viewModel.selectedMetric) {
+                                    ForEach(LeaderboardMetric.allCases, id: \.self) { metric in
+                                        Text(metric.rawValue).tag(metric)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
                             }
-                            .pickerStyle(.segmented)
                             .padding(.horizontal)
+                            
                             if viewModel.leaderboard.isEmpty {
                                 Text("Add friends to see them on the leaderboard!")
                                     .foregroundColor(.secondary)
@@ -101,6 +114,7 @@ struct FriendsView: View {
                         Spacer().frame(height: 100)
                     }
                 }
+                
                 VStack {
                     Spacer()
                     HStack {
@@ -110,7 +124,7 @@ struct FriendsView: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 60, height: 60)
-                                .background(profileVM.currentAppTint)
+                                .background(profileVM.currentAppTint) 
                                 .clipShape(Circle())
                                 .shadow(color: profileVM.currentAppTint.opacity(0.4), radius: 10, x: 0, y: 5)
                         }

@@ -29,6 +29,7 @@ class FriendViewModel: ObservableObject {
     @Published var showAlert: Bool = false
 
     private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
+    
     var leaderboard: [User] {
         var allUsers = friends
         if !allUsers.contains(where: { $0.id == currentUser.id }) { allUsers.append(currentUser) }
@@ -64,7 +65,7 @@ class FriendViewModel: ObservableObject {
         var fetchedFriends: [User] = []; var fetchedRequests: [User] = []
         
         for fid in friendIds {
-            if let snap = try? await dbRef.child("users").child(fid).getData(),
+            if let snap = try? await dbRef.child("users").child(fid).getLiveSnapshot(),
                let data = snap.value as? [String: Any],
                let jsonData = try? JSONSerialization.data(withJSONObject: data),
                let u = try? JSONDecoder().decode(User.self, from: jsonData) {
@@ -73,7 +74,7 @@ class FriendViewModel: ObservableObject {
         }
         
         for rid in requestIds {
-            if let snap = try? await dbRef.child("users").child(rid).getData(),
+            if let snap = try? await dbRef.child("users").child(rid).getLiveSnapshot(),
                let data = snap.value as? [String: Any],
                let jsonData = try? JSONSerialization.data(withJSONObject: data),
                let u = try? JSONDecoder().decode(User.self, from: jsonData) {
@@ -85,58 +86,59 @@ class FriendViewModel: ObservableObject {
     }
 
     func sendFriendRequest(to code: String) async {
-            guard !code.isEmpty else { return }
-            let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return }
+        let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard cleanCode != currentUser.friendCode else {
+            self.alertMessage = "You cannot add yourself!"
+            self.showAlert = true
+            return
+        }
+        
+        do {
+            let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: cleanCode)
             
-            guard cleanCode != currentUser.friendCode else {
-                self.alertMessage = "You cannot add yourself!"
+            let snapshot = try await query.getLiveSnapshot()
+            
+            guard snapshot.exists(),
+                  let children = snapshot.children.allObjects as? [DataSnapshot],
+                  let firstChild = children.first,
+                  let dict = firstChild.value as? [String: Any] else {
+                
+                self.alertMessage = "User with code \(cleanCode) not found."
                 self.showAlert = true
                 return
             }
             
-            do {
-                let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: cleanCode)
-                let snapshot = try await query.getData()
-                
-                guard snapshot.exists(),
-                      let children = snapshot.children.allObjects as? [DataSnapshot],
-                      let firstChild = children.first,
-                      let dict = firstChild.value as? [String: Any] else {
-                    
-                    self.alertMessage = "User with code \(cleanCode) not found."
-                    self.showAlert = true
-                    return
-                }
-                
-                let jsonData = try JSONSerialization.data(withJSONObject: dict)
-                var targetUser = try JSONDecoder().decode(User.self, from: jsonData)
-                
-                if targetUser.friendList.contains(currentUser.id) {
-                    self.alertMessage = "You are already friends with \(targetUser.username)."
-                } else if targetUser.pendingFriendRequests.contains(currentUser.id) {
-                    self.alertMessage = "Request already sent to \(targetUser.username)."
-                } else {
-                    targetUser.pendingFriendRequests.append(currentUser.id)
-                    try await dbRef.child("users").child(targetUser.id).child("pendingFriendRequests").setValue(targetUser.pendingFriendRequests)
-                    self.alertMessage = "Request successfully sent to \(targetUser.username)!"
-                }
-                
-            } catch let DecodingError.dataCorrupted(context) {
-                print("❌ Decoding Error: Data Corrupted: \(context)")
-                self.alertMessage = "Data format error."
-            } catch let DecodingError.keyNotFound(key, context) {
-                print("❌ Decoding Error: Key '\(key.stringValue)' not found: \(context.debugDescription)")
-                self.alertMessage = "Database error: Missing data."
-            } catch let DecodingError.typeMismatch(type, context) {
-                print("❌ Decoding Error: Type mismatch for type \(type): \(context.debugDescription)")
-                self.alertMessage = "Database error: Wrong data type."
-            } catch {
-                print("❌ Firebase / Network Error: \(error.localizedDescription)")
-                self.alertMessage = "Error sending request: \(error.localizedDescription)"
+            let jsonData = try JSONSerialization.data(withJSONObject: dict)
+            var targetUser = try JSONDecoder().decode(User.self, from: jsonData)
+            
+            if targetUser.friendList.contains(currentUser.id) {
+                self.alertMessage = "You are already friends with \(targetUser.username)."
+            } else if targetUser.pendingFriendRequests.contains(currentUser.id) {
+                self.alertMessage = "Request already sent to \(targetUser.username)."
+            } else {
+                targetUser.pendingFriendRequests.append(currentUser.id)
+                try await dbRef.child("users").child(targetUser.id).child("pendingFriendRequests").setValue(targetUser.pendingFriendRequests)
+                self.alertMessage = "Request successfully sent to \(targetUser.username)!"
             }
             
-            self.showAlert = true
+        } catch let DecodingError.dataCorrupted(context) {
+            print("❌ Decoding Error: Data Corrupted: \(context)")
+            self.alertMessage = "Data format error."
+        } catch let DecodingError.keyNotFound(key, context) {
+            print("❌ Decoding Error: Key '\(key.stringValue)' not found: \(context.debugDescription)")
+            self.alertMessage = "Database error: Missing data."
+        } catch let DecodingError.typeMismatch(type, context) {
+            print("❌ Decoding Error: Type mismatch for type \(type): \(context.debugDescription)")
+            self.alertMessage = "Database error: Wrong data type."
+        } catch {
+            print("❌ Firebase / Network Error: \(error.localizedDescription)")
+            self.alertMessage = "Error sending request: \(error.localizedDescription)"
         }
+        
+        self.showAlert = true
+    }
 
     func acceptRequest(from user: User) {
         if !currentUser.friendList.contains(user.id) { currentUser.friendList.append(user.id) }
@@ -183,16 +185,82 @@ class FriendViewModel: ObservableObject {
     }
 }
 
-extension User {
-    func actualSteps(for timeframe: LeaderboardTimeframe) -> Int {
-        let baseSteps = self.dailySteps
-        switch timeframe {
-        case .daily: return baseSteps
-        case .weekly: return baseSteps + (self.currentStreak * 4000)
-        case .monthly: return baseSteps + (self.currentStreak * 15000)
+extension DatabaseQuery {
+    func getLiveSnapshot() async throws -> DataSnapshot {
+        try await withCheckedThrowingContinuation { continuation in
+            self.observeSingleEvent(of: .value, with: { snapshot in
+                continuation.resume(returning: snapshot)
+            }, withCancel: { error in
+                continuation.resume(throwing: error)
+            })
         }
     }
+}
+
+extension User {
+    func actualSteps(for timeframe: LeaderboardTimeframe) -> Int {
+        switch timeframe {
+        case .daily:
+            return self.dailySteps
+        case .weekly:
+            return calculateSteps(daysBack: 7)
+        case .monthly:
+            return calculateSteps(daysBack: 30)
+        }
+    }
+    
     func actualDistance(for timeframe: LeaderboardTimeframe) -> Double {
-        return Double(actualSteps(for: timeframe)) * 0.000762
+        switch timeframe {
+        case .daily:
+            return Double(self.dailySteps) * 0.000762
+        case .weekly:
+            return calculateDistance(daysBack: 7)
+        case .monthly:
+            return calculateDistance(daysBack: 30)
+        }
+    }
+    
+    private func calculateSteps(daysBack: Int) -> Int {
+        guard let activities = self.dailyActivity, !activities.isEmpty else {
+            return self.dailySteps
+        }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        guard let startDate = calendar.date(byAdding: .day, value: -daysBack, to: today) else {
+            return self.dailySteps
+        }
+        
+        var totalSteps = 0
+        for (_, activity) in activities {
+            if activity.date >= startDate {
+                totalSteps += activity.steps
+            }
+        }
+        
+        return max(totalSteps, self.dailySteps)
+    }
+    
+    private func calculateDistance(daysBack: Int) -> Double {
+        guard let activities = self.dailyActivity, !activities.isEmpty else {
+            return Double(self.dailySteps) * 0.000762
+        }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        guard let startDate = calendar.date(byAdding: .day, value: -daysBack, to: today) else {
+            return Double(self.dailySteps) * 0.000762
+        }
+        
+        var totalMeters: Double = 0
+        for (_, activity) in activities {
+            if activity.date >= startDate {
+                totalMeters += activity.distanceInMeters
+            }
+        }
+        
+        let totalKm = totalMeters / 1000.0
+        let fallbackKm = Double(self.dailySteps) * 0.000762
+        return max(totalKm, fallbackKm)
     }
 }
