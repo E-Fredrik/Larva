@@ -14,8 +14,8 @@ import SwiftUI
 @MainActor
 class ProfileViewModel: ObservableObject {
     @Published var currentUser: User
-    @Published var stepsToday: Int = 5230
-    @Published var distanceToday: Double = 3.2
+    @Published var stepsToday: Int = 0
+    @Published var distanceToday: Double = 0.0
 
     var friendCount: Int {
         currentUser.friendList.count
@@ -32,19 +32,16 @@ class ProfileViewModel: ObservableObject {
         
         Task {
             await fetchAllShopItemsCache()
-            await fetchUserInventoryAndEquipment()
-        }
+            fetchUserLiveUpdates()         }
     }
 
     func logout() {
         do {
             try Auth.auth().signOut()
-            print("Successfully logged out \(currentUser.username)")
         } catch {
             print("Error logging out: \(error.localizedDescription)")
         }
     }
-    
     
     private func fetchAllShopItemsCache() async {
         do {
@@ -63,16 +60,24 @@ class ProfileViewModel: ObservableObject {
         }
     }
     
-    func fetchUserInventoryAndEquipment() async {
+    func fetchUserLiveUpdates() {
         let userId = currentUser.id
         
-        dbRef.child("users").child(userId).observe(.value) { snapshot in
-            guard let dict = snapshot.value as? [String: Any] else { return }
+        dbRef.child("users").child(userId).observe(.value) { [weak self] snapshot in
+            guard let self = self, let dict = snapshot.value as? [String: Any] else { return }
+            
+            if let username = dict["username"] as? String { self.currentUser.username = username }
+            if let points = dict["points"] as? Int { self.currentUser.points = points }
+            if let streak = dict["currentStreak"] as? Int { self.currentUser.currentStreak = streak }
+            
+            if let steps = dict["dailySteps"] as? Int {
+                self.stepsToday = steps
+                self.distanceToday = Double(steps) * 0.000762
+            }
             
             if let unlockedIds = dict["unlockedCustomizations"] as? [String] {
                 self.ownedItems = unlockedIds.compactMap { self.allShopItemsCache[$0] }
             }
-            
             if let equipmentDict = dict["equippedCustomizations"] as? [String: String] {
                 var resolvedEquipped: [String: ShopItem] = [:]
                 for (itemType, itemId) in equipmentDict {

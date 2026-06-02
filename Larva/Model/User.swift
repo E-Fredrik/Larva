@@ -1,8 +1,6 @@
 //
 //  User.swift
-//  LarvaLawas
-//
-//  Created by Eko Nur Cahyo S on 27/05/26.
+//  Larva
 //
 
 import Foundation
@@ -18,14 +16,14 @@ struct User: Identifiable, Codable {
     var pendingFriendRequests: [String]
     var unlockedCustomizations: [String]
     var claimedWaypoints: [String: Bool]
-    
     var equippedCustomizations: [String: String]
+    var dailySteps: Int
     
     enum CodingKeys: String, CodingKey {
-        case id, username, friendCode, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints, equippedCustomizations
+        case id, username, friendCode, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints, equippedCustomizations, dailySteps
     }
     
-    init(id: String, username: String, friendCode: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:], equippedCustomizations: [String: String] = [:]) {
+    init(id: String, username: String, friendCode: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:], equippedCustomizations: [String: String] = [:], dailySteps: Int = 0) {
         self.id = id
         self.username = username
         self.friendCode = friendCode
@@ -37,6 +35,7 @@ struct User: Identifiable, Codable {
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = claimedWaypoints
         self.equippedCustomizations = equippedCustomizations
+        self.dailySteps = dailySteps
     }
     
     init(id: String, username: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String]) {
@@ -51,6 +50,7 @@ struct User: Identifiable, Codable {
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = [:]
         self.equippedCustomizations = [:]
+        self.dailySteps = 0
     }
     
     init(id: String, username: String, points: Int, currentStreak: Int, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String]) {
@@ -65,6 +65,7 @@ struct User: Identifiable, Codable {
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = [:]
         self.equippedCustomizations = [:]
+        self.dailySteps = 0
     }
     
     init(from decoder: Decoder) throws {
@@ -81,5 +82,7 @@ struct User: Identifiable, Codable {
         unlockedCustomizations = try container.decodeIfPresent([String].self, forKey: .unlockedCustomizations) ?? []
         claimedWaypoints = try container.decodeIfPresent([String: Bool].self, forKey: .claimedWaypoints) ?? [:]
         equippedCustomizations = try container.decodeIfPresent([String: String].self, forKey: .equippedCustomizations) ?? [:]
+        
+        dailySteps = try container.decodeIfPresent(Int.self, forKey: .dailySteps) ?? 0
     }
 }

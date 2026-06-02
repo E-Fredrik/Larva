@@ -14,13 +14,13 @@ class QuestViewModel: ObservableObject {
     @Published var dailyQuests: [Quest] = []
     @Published var currentUser: User
 
-    // Tracks which quests have already awarded points
     @Published var claimedQuestIDs: Set<String> = []
     private let dbRef = Database.database().reference()
 
     init(currentUser: User) {
         self.currentUser = currentUser
         loadDailyQuests()
+        listenToDailySteps()
     }
 
     private func loadDailyQuests() {
@@ -41,21 +41,35 @@ class QuestViewModel: ObservableObject {
             ),
         ]
     }
+    
+    private func listenToDailySteps() {
+        dbRef.child("users").child(currentUser.id).child("dailySteps").observe(.value) { [weak self] snapshot in
+            let steps = snapshot.value as? Int ?? 0
+            Task { @MainActor in
+                self?.updateStepProgress(currentSteps: steps)
+            }
+        }
+    }
 
     func updateStepProgress(currentSteps: Int) {
+        if currentSteps == 0 {
+            claimedQuestIDs.removeAll()
+            for index in dailyQuests.indices {
+                dailyQuests[index].currentProgress = 0
+            }
+            return
+        }
+        
         for index in dailyQuests.indices {
             let questID = dailyQuests[index].id
 
             if dailyQuests[index].title.lowercased().contains("steps") {
-
-                //Updates if it hasn't hit the goal yet
                 if !dailyQuests[index].isCompleted {
                     dailyQuests[index].currentProgress = min(
                         currentSteps,
                         dailyQuests[index].targetGoal
                     )
 
-                    //If the update flipped it to completed, and we haven't paid out yet
                     if dailyQuests[index].isCompleted
                         && !claimedQuestIDs.contains(questID)
                     {
@@ -67,16 +81,9 @@ class QuestViewModel: ObservableObject {
     }
 
     private func autoClaimReward(for questID: String, at index: Int) {
-        //Marks as claimed in our Set so it never triggers again
         claimedQuestIDs.insert(questID)
-
-        //Award points directly to the User model
         currentUser.points += dailyQuests[index].rewardPoints
-        print(
-            "Claimed: \(dailyQuests[index].title)! Awarded \(dailyQuests[index].rewardPoints) pts."
-        )
-
-        //If the amount of claimed quests matches the total quests, increase streak
+        
         if claimedQuestIDs.count == dailyQuests.count {
             currentUser.currentStreak += 1
         }
@@ -85,13 +92,8 @@ class QuestViewModel: ObservableObject {
                 try dbRef.child("users").child(currentUser.id).setValue(
                     from: currentUser
                 )
-                print(
-                    "Claimed: \(dailyQuests[index].title)! Synced to Firebase."
-                )
             } catch {
-                print(
-                    "Error syncing quest reward: \(error.localizedDescription)"
-                )
+                print("Error syncing quest reward: \(error.localizedDescription)")
             }
         }
     }

@@ -17,50 +17,50 @@ struct FriendsView: View {
                 Color(UIColor.systemGroupedBackground)
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    VStack(spacing: 16) {
-                        Picker(
-                            "Timeframe",
-                            selection: $viewModel.selectedTimeframe
-                        ) {
-                            ForEach(LeaderboardTimeframe.allCases, id: \.self) {
-                                timeframe in
-                                Text(timeframe.rawValue).tag(timeframe)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        
+                        VStack(spacing: 16) {
+                            Picker(
+                                "Timeframe",
+                                selection: $viewModel.selectedTimeframe
+                            ) {
+                                ForEach(LeaderboardTimeframe.allCases, id: \.self) {
+                                    timeframe in
+                                    Text(timeframe.rawValue).tag(timeframe)
+                                }
                             }
-                        }
-                        .pickerStyle(.segmented)
-                        .padding(.horizontal)
+                            .pickerStyle(.segmented)
+                            .padding(.horizontal)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(LeaderboardMetric.allCases, id: \.self)
-                                { metric in
-                                    MetricPill(
-                                        title: metric.rawValue,
-                                        icon: metricIcon(for: metric),
-                                        isSelected: viewModel.selectedMetric
-                                            == metric
-                                    ) {
-                                        withAnimation(
-                                            .spring(
-                                                response: 0.3,
-                                                dampingFraction: 0.7
-                                            )
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(LeaderboardMetric.allCases, id: \.self)
+                                    { metric in
+                                        MetricPill(
+                                            title: metric.rawValue,
+                                            icon: metricIcon(for: metric),
+                                            isSelected: viewModel.selectedMetric
+                                                == metric
                                         ) {
-                                            viewModel.selectedMetric = metric
+                                            withAnimation(
+                                                .spring(
+                                                    response: 0.3,
+                                                    dampingFraction: 0.7
+                                                )
+                                            ) {
+                                                viewModel.selectedMetric = metric
+                                            }
                                         }
                                     }
                                 }
+                                .padding(.horizontal)
                             }
-                            .padding(.horizontal)
+                            .padding(.bottom, 8)
                         }
-                        .padding(.bottom, 8)
-                    }
-                    .padding(.top, 16)
-                    .background(Color(UIColor.systemGroupedBackground))
-                    .zIndex(1)
-
-                    ScrollView(showsIndicators: false) {
+                        .padding(.top, 16)
+                        .background(Color(UIColor.systemGroupedBackground))
+                        
                         LazyVStack(spacing: 12) {
                             ForEach(
                                 Array(viewModel.leaderboard.enumerated()),

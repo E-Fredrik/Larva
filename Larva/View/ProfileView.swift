@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var viewModel: ProfileViewModel
-
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingSettings = false
     @State private var showingCustomizationSheet = false
@@ -97,7 +96,6 @@ struct ProfileView: View {
 
     private var heroSection: some View {
         VStack(spacing: 12) {
-            
             ZStack {
                 Circle()
                     .fill(Color.mint.opacity(0.2))
@@ -274,14 +272,14 @@ struct CustomizationInventoryView: View {
         .environmentObject(ProfileViewModel(
             currentUser: User(
                 id: "USER-123",
-                username: "Maya Chen",
-                friendCode: "MCH123",
-                points: 2500,
-                currentStreak: 89,
-                dailyStepTarget: 10000,
-                friendList: ["user2", "user3"],
+                username: "User",
+                friendCode: "ABC123",
+                points: 0,
+                currentStreak: 0,
+                dailyStepTarget: 5000,
+                friendList: [],
                 pendingFriendRequests: [],
-                unlockedCustomizations: ["ITEM-001", "ITEM-002"],
+                unlockedCustomizations: [],
                 claimedWaypoints: [:]
             )
         ))

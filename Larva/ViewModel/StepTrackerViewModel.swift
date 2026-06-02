@@ -72,11 +72,9 @@ class StepTrackerViewModel: ObservableObject {
     private let dbRef = Database.database().reference()
     private var cancellables = Set<AnyCancellable>()
 
-    // Tracks the steps taken before a workout starts to keep the daily total accurate
     private var dailyBaselineBeforeWorkout: Int = 0
     private var currentSessionId: String = ""
 
-    // Helper to get the current logged-in user ID safely
     private var currentUserId: String {
         Auth.auth().currentUser?.uid ?? "guest"
     }
@@ -106,7 +104,6 @@ class StepTrackerViewModel: ObservableObject {
             route: []
         )
 
-        // Listen for midnight rollovers
         NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -134,7 +131,6 @@ class StepTrackerViewModel: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd"
         let currentDateString = formatter.string(from: Date())
         
-        // If the date string doesn't match, a new day has started for this user
         if lastTrackedDateString != currentDateString {
             lastRewardedPassiveSteps = 0
             hasRewardedDailyGoal = false
@@ -154,7 +150,7 @@ class StepTrackerViewModel: ObservableObject {
             if let target = snapshot.value as? Int {
                 self.dailyTarget = target
             } else {
-                self.dailyTarget = 5000 // Reset to clean default if new user has no record
+                self.dailyTarget = 5000
             }
         } catch {
             print("Failed to fetch target, using default.")
@@ -165,16 +161,13 @@ class StepTrackerViewModel: ObservableObject {
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
-        // 1. Check if the day changed before we start tracking
         _ = checkAndResetNewDay()
 
         let today = Date()
         let midnight = Calendar.current.startOfDay(for: today)
 
-        // 2. Stop any old updates so we don't get double callbacks
         passivePedometer.stopUpdates()
 
-        // Makes sure we get the total steps for the day right away
         passivePedometer.queryPedometerData(from: midnight, to: today) {
             [weak self] data, error in
             if let data = data, error == nil {
@@ -190,15 +183,12 @@ class StepTrackerViewModel: ObservableObject {
             guard let self = self, let data = data, error == nil else { return }
 
             Task { @MainActor in
-                // 3. Catch day changes that happen while updates stream in the background
                 if self.checkAndResetNewDay() {
-                    self.startPassiveTracking() // Restart with the new midnight
+                    self.startPassiveTracking()
                     return
                 }
 
                 self.dailySteps = data.numberOfSteps.intValue
-
-                // Trigger the background points check automatically
                 await self.syncDailyStepsToFirebase()
             }
         }
@@ -262,7 +252,6 @@ class StepTrackerViewModel: ObservableObject {
         startPassiveTracking()
     }
 
-    // Formats pace
     var formattedPace: String {
         guard session.currentPace > 0 else { return "0:00" }
         let secondsPerKm = session.currentPace * 1000
@@ -283,7 +272,6 @@ class StepTrackerViewModel: ObservableObject {
     func attachRouteToSession(_ route: [RouteCoordinate]) {
         self.session.route = route
 
-        // Trigger the database saves automatically when the session map finishes
         Task {
             await awardActiveWorkoutPoints()
             await saveWorkoutToFirebase()
@@ -317,13 +305,9 @@ class StepTrackerViewModel: ObservableObject {
                 .setValue(
                     ServerValue.increment(NSNumber(value: totalActivePoints))
                 )
-            print(
-                "🔥 Awarded \(totalActivePoints) Active Points! (Multiplier: \(paceMultiplier)x)"
-            )
+            print("Awarded \(totalActivePoints) Active Points!")
         } catch {
-            print(
-                "Failed to award active points: \(error.localizedDescription)"
-            )
+            print("Failed to award active points: \(error.localizedDescription)")
         }
     }
 
@@ -335,14 +319,7 @@ class StepTrackerViewModel: ObservableObject {
             ? "SESSION-\(UUID().uuidString.prefix(8))" : self.currentSessionId
 
         do {
-            try dbRef
-                .child("users")
-                .child(userId)
-                .child("workoutHistory")
-                .child(sessionId)
-                .setValue(from: session)
-
-            print("Successfully saved Active Workout to Firebase.")
+            try dbRef.child("users").child(userId).child("workoutHistory").child(sessionId).setValue(from: session)
         } catch {
             print("Failed to save workout: \(error.localizedDescription)")
         }
@@ -350,6 +327,12 @@ class StepTrackerViewModel: ObservableObject {
 
     func syncDailyStepsToFirebase() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
+
+        do {
+            try await dbRef.child("users").child(userId).child("dailySteps").setValue(self.dailySteps)
+        } catch {
+            print("Failed to sync raw daily steps to Firebase: \(error.localizedDescription)")
+        }
 
         let unrewardedSteps = self.dailySteps - self.lastRewardedPassiveSteps
 
@@ -361,9 +344,6 @@ class StepTrackerViewModel: ObservableObject {
             {
                 pointsToAward += 250
                 self.hasRewardedDailyGoal = true
-                print(
-                    "🌟 \(self.dailyTarget) Daily Target Reached! 250 Bonus points awarded!"
-                )
             }
 
             do {
@@ -373,11 +353,8 @@ class StepTrackerViewModel: ObservableObject {
                     )
 
                 self.lastRewardedPassiveSteps += (pointsToAward * 100)
-                print("🚶‍♂️ Awarded \(pointsToAward) Passive Points!")
             } catch {
-                print(
-                    "Failed to sync passive points: \(error.localizedDescription)"
-                )
+                print("Failed to sync passive points: \(error.localizedDescription)")
             }
         }
 
@@ -393,43 +370,9 @@ class StepTrackerViewModel: ObservableObject {
         )
 
         do {
-            try dbRef
-                .child("users")
-                .child(userId)
-                .child("dailyActivity")
-                .child(dateString)
-                .setValue(from: activity)
-
-            print(
-                "Successfully synced \(dailySteps) total daily steps to Firebase."
-            )
+            try dbRef.child("users").child(userId).child("dailyActivity").child(dateString).setValue(from: activity)
         } catch {
             print("Failed to sync daily steps: \(error.localizedDescription)")
         }
     }
-
-    #if DEBUG
-        /// Forces the view model into an active running state without needing hardware sensors
-        func test_forceWorkoutState(isRunning: Bool) {
-            self.session.isRunning = isRunning
-        }
-
-        /// Hardcodes step and distance data directly into the properties
-        func test_injectMetrics(
-            passiveSteps: Int,
-            activeSteps: Int,
-            distance: Double,
-            pace: Double
-        ) {
-            self.dailySteps = passiveSteps + activeSteps
-            self.session.steps = activeSteps
-            self.session.distanceInMeters = distance
-            self.session.currentPace = pace
-        }
-
-        /// Hardcodes the daily target without needing a Firebase fetch
-        func test_setTarget(_ target: Int) {
-            self.dailyTarget = target
-        }
-    #endif
 }
