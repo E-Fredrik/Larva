@@ -8,43 +8,25 @@
 import SwiftUI
 
 struct CustomAvatarView: View {
-    @EnvironmentObject var profileVM: ProfileViewModel
-    var username: String
+    let user: User
     var size: CGFloat = 80
+    
+    @EnvironmentObject var profileVM: ProfileViewModel
     
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.primary.opacity(0.1))
             
-            Text(String(username.prefix(1)).uppercased())
-                .font(.system(size: size * 0.4, weight: .bold))
+            Text(String(user.username.prefix(1)).uppercased())
+                .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
             
-            if let borderItem = profileVM.equippedItems[ShopItem.ItemType.avatarBorder.rawValue] {
-                Image(borderItem.id)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: size * 1.15, height: size * 1.15)
+            if let borderColor = profileVM.getBorderColor(for: user) {
+                Circle()
+                    .stroke(borderColor, lineWidth: size * 0.06)
             }
         }
         .frame(width: size, height: size)
     }
-}
-
-#Preview {
-    CustomAvatarView(username: "Larva")
-        .environmentObject(ProfileViewModel(currentUser:
-            User(
-            id: "USER-123",
-            username: "Maya Chen",
-            friendCode: "MCH123",
-            points: 2500,
-            currentStreak: 89,
-            dailyStepTarget: 10000,
-            friendList: ["user2", "user3"],
-            pendingFriendRequests: [],
-            unlockedCustomizations: ["ITEM-001", "ITEM-002"],
-            claimedWaypoints: [:]
-        )))
 }

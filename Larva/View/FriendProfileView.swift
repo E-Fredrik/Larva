@@ -10,8 +10,13 @@ import SwiftUI
 struct FriendProfileView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: FriendViewModel
+    @EnvironmentObject var profileVM: ProfileViewModel
     
     let user: User
+    
+    private var activeUser: User {
+        user.id == profileVM.currentUser.id ? profileVM.currentUser : user
+    }
 
     var body: some View {
         ZStack {
@@ -22,26 +27,18 @@ struct FriendProfileView: View {
                 VStack(spacing: 24) {
                     
                     VStack(spacing: 16) {
-                        Circle()
-                            .fill(Color.mint.opacity(0.15))
-                            .frame(width: 100, height: 100)
-                            .overlay(
-                                Text(String(user.username.prefix(1)).uppercased())
-                                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                                    .foregroundColor(.mint)
-                            )
-                            .overlay(Circle().stroke(Color.mint.opacity(0.5), lineWidth: 2))
+                        CustomAvatarView(user: activeUser, size: 100)
                             .padding(.top, 10)
                         
                         VStack(spacing: 6) {
-                            Text(user.username)
+                            Text(activeUser.username)
                                 .font(.title2)
                                 .fontWeight(.bold)
                             
                             HStack(spacing: 6) {
                                 Image(systemName: "person.badge.key.fill")
                                     .font(.caption)
-                                Text("Code: \(user.friendCode)")
+                                Text("Code: \(activeUser.friendCode)")
                             }
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -58,22 +55,24 @@ struct FriendProfileView: View {
                     .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
                     
                     HStack(spacing: 16) {
-                        FriendStatCard(title: "Streak", value: "\(user.currentStreak)", icon: "flame.fill", color: .orange)
-                        FriendStatCard(title: "Points", value: "\(user.points)", icon: "star.fill", color: .yellow)
+                        FriendStatCard(title: "Streak", value: "\(activeUser.currentStreak)", icon: "flame.fill", color: .orange)
+                        FriendStatCard(title: "Points", value: "\(activeUser.points)", icon: "star.fill", color: .yellow)
                     }
 
-                    Button(action: {
-                        viewModel.removeFriend(user)
-                        dismiss()
-                    }) {
-                        Text("Remove Friend")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color(UIColor.secondarySystemGroupedBackground))
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    if activeUser.id != profileVM.currentUser.id {
+                        Button(action: {
+                            viewModel.removeFriend(activeUser)
+                            dismiss()
+                        }) {
+                            Text("Remove Friend")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color(UIColor.secondarySystemGroupedBackground))
+                                .cornerRadius(16)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        }
                     }
                     
                     Spacer().frame(height: 100)
@@ -83,7 +82,7 @@ struct FriendProfileView: View {
             
             VStack {
                 Spacer()
-                Text("Check in on your friends to see their progress and stay motivated!")
+                Text(activeUser.id == profileVM.currentUser.id ? "Keep up the great work and stay active!" : "Check in on your friends to see their progress and stay motivated!")
                     .font(.footnote)
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
@@ -97,7 +96,7 @@ struct FriendProfileView: View {
                     .padding(.bottom, 20)
             }
         }
-        .navigationTitle("Friend Profile")
+        .navigationTitle(activeUser.id == profileVM.currentUser.id ? "Your Stats" : "Friend Profile")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

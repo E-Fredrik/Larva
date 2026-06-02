@@ -24,15 +24,19 @@ struct AuthenticatedRootView: View {
     }
 
     var body: some View {
-        Group {
-            if sizeClass == .regular {
-                SidebarNavigationView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
-            } else {
-                MainTabView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
+        ZStack {
+            profileVM.currentAppGradient
+                .ignoresSafeArea()
+            
+            Group {
+                if sizeClass == .regular {
+                    SidebarNavigationView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
+                } else {
+                    MainTabView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
+                }
             }
         }
         .environmentObject(profileVM)
         .tint(profileVM.currentAppTint)
-        .preferredColorScheme(profileVM.currentAppTheme)
     }
 }

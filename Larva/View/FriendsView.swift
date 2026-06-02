@@ -10,6 +10,7 @@ import SwiftUI
 struct FriendsView: View {
     @ObservedObject var viewModel: FriendViewModel
     @State private var showingAddFriend = false
+    @EnvironmentObject var profileVM: ProfileViewModel
 
     var body: some View {
         NavigationStack {
@@ -21,7 +22,7 @@ struct FriendsView: View {
                         VStack(spacing: 12) {
                             Image(systemName: "person.2.circle.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(.mint)
+                                .foregroundColor(profileVM.currentAppTint)
                             
                             Text("Your Friend Code")
                                 .font(.subheadline)
@@ -48,7 +49,7 @@ struct FriendsView: View {
                                         Spacer()
                                         Button("Accept") { viewModel.acceptRequest(from: reqUser) }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.mint)
+                                            .tint(profileVM.currentAppTint)
                                         Button("Decline") { viewModel.declineRequest(from: reqUser) }
                                             .buttonStyle(.bordered)
                                             .tint(.red)
@@ -109,9 +110,9 @@ struct FriendsView: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 60, height: 60)
-                                .background(Color.mint)
+                                .background(profileVM.currentAppTint)
                                 .clipShape(Circle())
-                                .shadow(color: Color.mint.opacity(0.4), radius: 10, x: 0, y: 5)
+                                .shadow(color: profileVM.currentAppTint.opacity(0.4), radius: 10, x: 0, y: 5)
                         }
                         .padding(.trailing, 24)
                         .padding(.bottom, 24)

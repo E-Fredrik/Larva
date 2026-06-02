@@ -13,6 +13,7 @@ struct WorkoutControlPanel: View {
     let distance: String
     let pace: String
     let onToggleAction: () -> Void
+    @EnvironmentObject var profileVM: ProfileViewModel
 
     var body: some View {
         VStack(spacing: 16) {
@@ -33,7 +34,7 @@ struct WorkoutControlPanel: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(isRecording ? Color.red : Color.mint)
+                .background(isRecording ? Color.red : profileVM.currentAppTint)
                 .foregroundColor(.white)
                 .cornerRadius(16)
             }
@@ -53,4 +54,5 @@ struct WorkoutControlPanel: View {
         pace: "3:50",
         onToggleAction: {}
     )
+    .environmentObject(ProfileViewModel(currentUser: User(id: "TEST", username: "TEST", points: 0, currentStreak: 0, friendList: [], pendingFriendRequests: [], unlockedCustomizations: [])))
 }

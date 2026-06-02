@@ -1,6 +1,6 @@
 //
 //  LeaderboardRow.swift
-//  LarvaDep
+//  Larva
 //
 //  Created by Eko Nur Cahyo S on 27/05/26.
 //
@@ -13,6 +13,11 @@ struct LeaderboardRow: View {
     let metric: LeaderboardMetric
     let timeframe: LeaderboardTimeframe
     let isCurrentUser: Bool
+    @EnvironmentObject var profileVM: ProfileViewModel
+
+    private var activeUser: User {
+        isCurrentUser ? profileVM.currentUser : user
+    }
 
     private var rankColor: Color {
         switch rank {
@@ -26,15 +31,15 @@ struct LeaderboardRow: View {
     private var displayValue: String {
         switch metric {
         case .streaks:
-            return "\(user.currentStreak) Days"
+            return "\(activeUser.currentStreak) Days"
         case .steps:
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
             return formatter.string(
-                from: NSNumber(value: user.actualSteps(for: timeframe))
+                from: NSNumber(value: activeUser.actualSteps(for: timeframe))
             ) ?? "0"
         case .distance:
-            return String(format: "%.1f km", user.actualDistance(for: timeframe))
+            return String(format: "%.1f km", activeUser.actualDistance(for: timeframe))
         }
     }
 
@@ -60,25 +65,10 @@ struct LeaderboardRow: View {
             }
             .frame(width: 40)
 
-            Circle()
-                .fill(Color.mint.opacity(0.2))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(String(user.username.prefix(1)).uppercased())
-                        .font(
-                            .system(size: 20, weight: .bold, design: .rounded)
-                        )
-                        .foregroundColor(.mint)
-                )
-                .overlay(
-                    Circle().stroke(
-                        isCurrentUser ? Color.yellow : Color.clear,
-                        lineWidth: 2
-                    )
-                )
+            CustomAvatarView(user: activeUser, size: 48)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(user.username)
+                Text(activeUser.username)
                     .font(.headline)
                     .foregroundColor(isCurrentUser ? .primary : .primary)
 
@@ -86,10 +76,10 @@ struct LeaderboardRow: View {
                     Text("You")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(.mint)
+                        .foregroundColor(profileVM.currentAppTint)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.mint.opacity(0.2))
+                        .background(profileVM.currentAppTint.opacity(0.2))
                         .cornerRadius(4)
                 }
             }
@@ -100,7 +90,7 @@ struct LeaderboardRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: metricIcon)
                         .font(.caption)
-                        .foregroundColor(metric == .streaks ? .orange : .mint)
+                        .foregroundColor(metric == .streaks ? .orange : profileVM.currentAppTint)
 
                     Text(displayValue)
                         .font(.subheadline)

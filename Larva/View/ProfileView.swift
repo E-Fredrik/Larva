@@ -62,24 +62,8 @@ struct ProfileView: View {
 
     private var heroSection: some View {
         VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(viewModel.currentAppTint.opacity(0.2))
-                    .frame(width: 100, height: 100)
-                    .overlay(
-                        Text(String(viewModel.currentUser.username.prefix(1)).uppercased())
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                        .foregroundColor(viewModel.currentAppTint)
-                    )
-                
-                if let borderItem = viewModel.equippedItems[ShopItem.ItemType.avatarBorder.rawValue] {
-                    Image(borderItem.id)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 115, height: 115)
-                }
-            }
-            .padding(.top, 20)
+            CustomAvatarView(user: viewModel.currentUser, size: 100)
+                .padding(.top, 20)
 
             VStack(spacing: 4) {
                 Text(viewModel.currentUser.username).font(.title2).fontWeight(.bold)
@@ -170,7 +154,7 @@ struct CustomizationInventoryView: View {
                                                 Task { await viewModel.equipItem(item: item) }
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(viewModel.currentAppTint) 
+                                            .tint(viewModel.currentAppTint)
                                         }
                                     }
                                     .padding(.vertical, 4)

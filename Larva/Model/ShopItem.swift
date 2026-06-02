@@ -12,7 +12,8 @@ struct ShopItem: Identifiable, Codable {
     var name: String
     var description: String
     var cost: Int
-    var itemType: ItemType
+    var itemType: ItemType    
+    var colorHex: String?
 
     enum ItemType: String, Codable, CaseIterable {
         case appTheme = "appTheme"

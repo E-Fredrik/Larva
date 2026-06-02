@@ -35,22 +35,30 @@ class ProfileViewModel: ObservableObject {
         }
     }
     
-    
-    var currentAppTheme: ColorScheme? {
-        guard let themeItem = equippedItems[ShopItem.ItemType.appTheme.rawValue] else { return nil }
-        if themeItem.id == "ITEM-001" || themeItem.id == "ITEM-005" { return .dark }
-        if themeItem.id == "ITEM-004" { return .light }
-        return nil
+    var currentAppTint: Color {
+        guard let themeItem = equippedItems[ShopItem.ItemType.appTheme.rawValue],
+              let hexString = themeItem.colorHex else {
+            return .mint
+        }
+        return Color(hex: hexString) ?? .mint
     }
     
-    var currentAppTint: Color {
-        guard let themeItem = equippedItems[ShopItem.ItemType.appTheme.rawValue] else { return .mint }
-        if themeItem.id == "ITEM-001" { return .purple }
-        if themeItem.id == "ITEM-004" { return .blue }
-        if themeItem.id == "ITEM-005" { return .orange }
-        return .mint
+    var currentAppGradient: LinearGradient {
+        LinearGradient(
+            colors: [currentAppTint.opacity(0.2), Color(UIColor.systemGroupedBackground)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
+    func getBorderColor(for user: User) -> Color? {
+        guard let borderId = user.equippedCustomizations[ShopItem.ItemType.avatarBorder.rawValue],
+              let item = allShopItemsCache[borderId],
+              let hex = item.colorHex else {
+            return nil
+        }
+        return Color(hex: hex)
+    }
 
     private func fetchAllShopItemsCache() async {
         do {
@@ -133,5 +141,29 @@ class ProfileViewModel: ObservableObject {
         } catch {
             print("Failed to unequip item")
         }
+    }
+}
+
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+        var r: Double = 0.0
+        var g: Double = 0.0
+        var b: Double = 0.0
+
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        if hexSanitized.count == 6 {
+            r = Double((rgb & 0xFF0000) >> 16) / 255.0
+            g = Double((rgb & 0x00FF00) >> 8) / 255.0
+            b = Double(rgb & 0x0000FF) / 255.0
+        } else {
+            return nil
+        }
+
+        self.init(red: r, green: g, blue: b)
     }
 }
