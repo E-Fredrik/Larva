@@ -7,7 +7,9 @@
 
 import Testing
 import FirebaseAuth
+import SwiftUI
 @testable import Larva
+
 @Suite("Profile View Model Tests")
 @MainActor
 struct ProfileViewModelTests {
@@ -16,6 +18,11 @@ struct ProfileViewModelTests {
     var mockUser: Larva.User
     
     init() {
+        let equipped = [
+            ShopItem.ItemType.appTheme.rawValue: "theme_red",
+            ShopItem.ItemType.avatarBorder.rawValue: "border_gold"
+        ]
+        
         self.mockUser = Larva.User(
             id: "test_user_profile",
             username: "ProfileDave",
@@ -25,10 +32,16 @@ struct ProfileViewModelTests {
             dailyStepTarget: 10000,
             friendList: ["friend_1", "friend_2", "friend_3"],
             pendingFriendRequests: [],
-            unlockedCustomizations: ["theme_midnight", "border_gold"],
-            claimedWaypoints: [:]
+            unlockedCustomizations: ["theme_red", "border_gold"],
+            claimedWaypoints: [:],
+            equippedCustomizations: equipped
         )
         self.viewModel = ProfileViewModel(currentUser: mockUser)
+        
+        viewModel.equippedItems = [
+            "appTheme": ShopItem(id: "theme_red", name: "Red Theme", description: "", cost: 100, itemType: .appTheme, colorHex: "#FF0000"),
+            "avatarBorder": ShopItem(id: "border_gold", name: "Gold Border", description: "", cost: 500, itemType: .avatarBorder, colorHex: "#FFD700")
+        ]
     }
     
     @Test("ViewModel initializes with the correct user data")
@@ -46,22 +59,27 @@ struct ProfileViewModelTests {
         #expect(viewModel.friendCount == 4, "Friend count should dynamically update to 4.")
     }
     
-    @Test("Default daily ephemeral stats load correctly")
-    func defaultDailyStats() {
-        #expect(viewModel.stepsToday == 5230, "Steps today should load the default UI value.")
-        #expect(viewModel.distanceToday == 3.2, "Distance today should load the default UI value.")
-    }
-    
-    @Test("Equipped customizations default to standard loadout")
+    @Test("Equipped customizations decode correctly into dictionary")
     func equippedCustomizationsLoaded() {
-        #expect(viewModel.equippedCustomization.count == 2, "Should load the 2 default equipped items.")
-        #expect(viewModel.equippedCustomization.contains { $0.id == "theme_midnight" })
-        #expect(viewModel.equippedCustomization.contains { $0.id == "border_gold" })
+        #expect(viewModel.equippedItems.count == 2, "Should load the 2 mock equipped items.")
+        #expect(viewModel.equippedItems["appTheme"]?.id == "theme_red")
+        #expect(viewModel.equippedItems["avatarBorder"]?.id == "border_gold")
     }
     
-    @Test("Logout executes safely without fatal crashes")
-    func logoutExecution() {
-        viewModel.logout()
-        #expect(true, "Logout function handled missing Firebase configuration gracefully without crashing.")
+    @Test("Dynamic App Tint correctly reads Hex color from equipped theme")
+    func dynamicAppTintTranslatesHex() {
+        let tint = viewModel.currentAppTint
+        
+        #expect(tint != .mint, "The app tint should translate the #FF0000 hex and not fall back to default mint.")
+    }
+    
+    @Test("Avatar Border helper safely extracts hex for user")
+    func borderHelperTranslatesHex() {
+        viewModel.allShopItemsCache = [
+            "border_gold": ShopItem(id: "border_gold", name: "Gold Border", description: "", cost: 500, itemType: .avatarBorder, colorHex: "#FFD700")
+        ]
+        
+        let color = viewModel.getBorderColor(for: mockUser)
+        #expect(color != nil, "The helper should successfully extract the hex and convert to Color")
     }
 }

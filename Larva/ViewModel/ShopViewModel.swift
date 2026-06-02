@@ -20,6 +20,7 @@ class ShopViewModel: ObservableObject {
     @Published var errorMessage: String = ""
     
     private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
+    
     init() {
         Task {
             await fetchShopItems()
@@ -61,14 +62,17 @@ class ShopViewModel: ObservableObject {
     }
     
     func purchaseItem(item: ShopItem) async {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
-        
         guard !unlockedCustomizations.contains(item.id) else {
             errorMessage = "You already own this item!"
             return
         }
         guard userPoints >= item.cost else {
             errorMessage = "Not enough points!"
+            return
+        }
+        
+        guard let userId = Auth.auth().currentUser?.uid else {
+            errorMessage = "Authentication error. Please log in again."
             return
         }
         

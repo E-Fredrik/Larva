@@ -125,16 +125,16 @@ struct StepTrackerViewModelTests {
 
     @Test("Fetch Data from Firebase")
     func fetchDataFromFirebase() async throws {
-        let testUserId =
-            try await FirebaseIntegrationHelper.createAnonymousTestUser()
+        let testUserId = try await FirebaseIntegrationHelper.createAnonymousTestUser()
 
-        //Use defer to cleanup test data from database, this runs before the function ends.
         defer {
             Task {
                 await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
             }
         }
-        let dbRef = Database.database().reference()
+        
+        let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
+        
         try await dbRef.child("users").child(testUserId).child(
             "dailyStepTarget"
         ).setValue(8888)
@@ -148,19 +148,24 @@ struct StepTrackerViewModelTests {
 
     @Test("Upload data to firebase")
     func uploadDataToFirebase() async throws {
-        let testUserId =
-            try await FirebaseIntegrationHelper.createAnonymousTestUser()
+        let testUserId = try await FirebaseIntegrationHelper.createAnonymousTestUser()
+        
         defer {
             Task {
                 await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
             }
         }
-        let dbRef = Database.database().reference()
+        
+        // FIX 2: Point to correct Asian server
+        let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
+        
         let dummyRoute = [RouteCoordinate(lat: -7.2504, lng: 112.7688)]
         vm.attachRouteToSession(dummyRoute)
+        
         try await Task.sleep(nanoseconds: 2_000_000_000)  //Sleeps for 2 seconds
-        let historySnapshot = try await dbRef.child("users").child(testUserId)
-            .child("workoutHistory").getData()
+        
+        // FIX 3: Replaced .getData() with .getLiveSnapshot() to bypass test simulator disconnects
+        let historySnapshot = try await dbRef.child("users").child(testUserId).child("workoutHistory").getLiveSnapshot()
 
         #expect(
             historySnapshot.exists(),
@@ -175,6 +180,5 @@ struct StepTrackerViewModelTests {
             routeArray?.first?["lat"] == -7.2504,
             "ViewModel uploaded incorrect GPS coordinates"
         )
-
     }
 }
