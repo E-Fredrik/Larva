@@ -144,6 +144,10 @@ class FriendViewModel: ObservableObject {
         if !currentUser.friendList.contains(user.id) { currentUser.friendList.append(user.id) }
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
         
+        // INSTANT UI UPDATE
+        pendingRequests.removeAll { $0.id == user.id }
+        if !friends.contains(where: { $0.id == user.id }) { friends.append(user) }
+        
         Task {
             do {
                 try await dbRef.child("users").child(currentUser.id).child("friendList").setValue(currentUser.friendList)
@@ -160,6 +164,9 @@ class FriendViewModel: ObservableObject {
 
     func declineRequest(from user: User) {
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
+        
+        pendingRequests.removeAll { $0.id == user.id }
+        
         Task {
             do {
                 try await dbRef.child("users").child(currentUser.id).child("pendingFriendRequests").setValue(currentUser.pendingFriendRequests)
@@ -169,6 +176,8 @@ class FriendViewModel: ObservableObject {
     
     func removeFriend(_ user: User) {
         currentUser.friendList.removeAll { $0 == user.id }
+        
+        friends.removeAll { $0.id == user.id }
         
         Task {
             do {
@@ -197,6 +206,7 @@ extension DatabaseQuery {
     }
 }
 
+// MARK: - LIVE LEADERBOARD LOGIC
 extension User {
     func actualSteps(for timeframe: LeaderboardTimeframe) -> Int {
         switch timeframe {
