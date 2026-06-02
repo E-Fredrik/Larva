@@ -19,11 +19,13 @@ struct User: Identifiable, Codable {
     var unlockedCustomizations: [String]
     var claimedWaypoints: [String: Bool]
     
+    var equippedCustomizations: [String: String]
+    
     enum CodingKeys: String, CodingKey {
-        case id, username, friendCode, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints
+        case id, username, friendCode, points, currentStreak, dailyStepTarget, friendList, pendingFriendRequests, unlockedCustomizations, claimedWaypoints, equippedCustomizations
     }
     
-    init(id: String, username: String, friendCode: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:]) {
+    init(id: String, username: String, friendCode: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String], claimedWaypoints: [String: Bool] = [:], equippedCustomizations: [String: String] = [:]) {
         self.id = id
         self.username = username
         self.friendCode = friendCode
@@ -34,6 +36,7 @@ struct User: Identifiable, Codable {
         self.pendingFriendRequests = pendingFriendRequests
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = claimedWaypoints
+        self.equippedCustomizations = equippedCustomizations
     }
     
     init(id: String, username: String, points: Int, currentStreak: Int, dailyStepTarget: Int = 5000, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String]) {
@@ -47,6 +50,7 @@ struct User: Identifiable, Codable {
         self.pendingFriendRequests = pendingFriendRequests
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = [:]
+        self.equippedCustomizations = [:]
     }
     
     init(id: String, username: String, points: Int, currentStreak: Int, friendList: [String], pendingFriendRequests: [String], unlockedCustomizations: [String]) {
@@ -60,6 +64,7 @@ struct User: Identifiable, Codable {
         self.pendingFriendRequests = pendingFriendRequests
         self.unlockedCustomizations = unlockedCustomizations
         self.claimedWaypoints = [:]
+        self.equippedCustomizations = [:]
     }
     
     init(from decoder: Decoder) throws {
@@ -75,5 +80,6 @@ struct User: Identifiable, Codable {
         pendingFriendRequests = try container.decodeIfPresent([String].self, forKey: .pendingFriendRequests) ?? []
         unlockedCustomizations = try container.decodeIfPresent([String].self, forKey: .unlockedCustomizations) ?? []
         claimedWaypoints = try container.decodeIfPresent([String: Bool].self, forKey: .claimedWaypoints) ?? [:]
+        equippedCustomizations = try container.decodeIfPresent([String: String].self, forKey: .equippedCustomizations) ?? [:]
     }
 }

@@ -10,25 +10,25 @@ import SwiftUI
 struct AuthenticatedRootView: View {
     let sizeClass: UserInterfaceSizeClass?
 
-    // ViewModels initialized with the REAL Firebase user
     @StateObject var friendVM: FriendViewModel
     @StateObject var questVM: QuestViewModel
     @StateObject var shopVM: ShopViewModel
+    
+    @StateObject var profileVM: ProfileViewModel
 
     init(user: User, sizeClass: UserInterfaceSizeClass?) {
         self.sizeClass = sizeClass
 
-        // Dynamically inject the fetched Firebase user into the StateObjects
-        _friendVM = StateObject(
-            wrappedValue: FriendViewModel(currentUser: user)
-        )
+        _friendVM = StateObject(wrappedValue: FriendViewModel(currentUser: user))
         _questVM = StateObject(wrappedValue: QuestViewModel(currentUser: user))
-        _shopVM = StateObject(wrappedValue: ShopViewModel(currentUser: user))
+        
+        _shopVM = StateObject(wrappedValue: ShopViewModel())
+        
+        _profileVM = StateObject(wrappedValue: ProfileViewModel(currentUser: user))
     }
 
     var body: some View {
         Group {
-            // 4. Preserve your iPad vs iPhone responsive routing
             if sizeClass == .regular {
                 SidebarNavigationView(
                     friendVM: friendVM,
@@ -44,5 +44,6 @@ struct AuthenticatedRootView: View {
             }
         }
         .tint(.mint)
+        .environmentObject(profileVM)
     }
 }

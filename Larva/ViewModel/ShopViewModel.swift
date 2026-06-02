@@ -5,87 +5,91 @@
 //  Created by student on 28/05/26.
 //
 
-import Combine
-import FirebaseDatabase
 import Foundation
-import SwiftUI
+import FirebaseDatabase
+import FirebaseAuth
+import Combine
 
 @MainActor
 class ShopViewModel: ObservableObject {
-    @Published var currentUser: User
-    @Published var storeItems: [ShopItem] = []
-
+    @Published var availableItems: [ShopItem] = []
+    @Published var userPoints: Int = 0
+    @Published var unlockedCustomizations: [String] = []
+    
+    @Published var isPurchasing: Bool = false
+    @Published var errorMessage: String = ""
+    
     private let dbRef = Database.database().reference()
-
-    init(currentUser: User) {
-        self.currentUser = currentUser
-        loadStoreItems()
-    }
-
-    private func loadStoreItems() {
-        storeItems = [
-            ShopItem(
-                id: "theme_midnight",
-                name: "Midnight Mint",
-                description: "A dark mode map with glowing mint accents.",
-                cost: 500,
-                itemType: .mapTheme
-            ),
-            ShopItem(
-                id: "theme_surabaya",
-                name: "Surabaya Heat",
-                description: "Warm pastel orange and yellow map routes.",
-                cost: 800,
-                itemType: .mapTheme
-            ),
-            ShopItem(
-                id: "border_gold",
-                name: "Golden Frame",
-                description: "A shiny gold border for your leaderboard avatar.",
-                cost: 300,
-                itemType: .avatarBorder
-            ),
-            ShopItem(
-                id: "icon_retro",
-                name: "Retro Larva",
-                description: "An old-school pixelated app icon.",
-                cost: 1200,
-                itemType: .appIcon
-            ),
-        ]
-    }
-
-    func purchase(item: ShopItem) {
-        guard !currentUser.unlockedCustomizations.contains(item.id) else {
-            return
-        }
-        guard currentUser.points >= item.cost else {
-            print("Not enough points to buy \(item.name)!")
-            return
-        }
-
-        //Process local transaction
-        currentUser.points -= item.cost
-        currentUser.unlockedCustomizations.append(item.id)
-
-        //Sync to Firebase Realtime Database
+    
+    init() {
         Task {
-            do {
-                try dbRef.child("users").child(currentUser.id).setValue(
-                    from: currentUser
-                )
-                print(
-                    "Successfully purchased \(item.name)! Synced to Firebase."
-                )
-            } catch {
-                print(
-                    "Error syncing purchase to database: \(error.localizedDescription)"
-                )
+            await fetchShopItems()
+            await fetchUserData()
+        }
+    }
+    
+    func fetchShopItems() async {
+        do {
+            let snapshot = try await dbRef.child("shopItems").getData()
+            guard let children = snapshot.children.allObjects as? [DataSnapshot] else { return }
+            
+            var items: [ShopItem] = []
+            for child in children {
+                if let dict = child.value as? [String: Any],
+                   let jsonData = try? JSONSerialization.data(withJSONObject: dict),
+                   let item = try? JSONDecoder().decode(ShopItem.self, from: jsonData) {
+                    items.append(item)
+                }
+            }
+            self.availableItems = items
+        } catch {
+            print("Error fetching shop items: \(error.localizedDescription)")
+        }
+    }
+    
+    func fetchUserData() async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        dbRef.child("users").child(userId).observe(.value) { snapshot in
+            if let dict = snapshot.value as? [String: Any] {
+                self.userPoints = dict["points"] as? Int ?? 0
+                
+                if let unlocked = dict["unlockedCustomizations"] as? [String] {
+                    self.unlockedCustomizations = unlocked
+                }
             }
         }
     }
-
-    func owns(item: ShopItem) -> Bool {
-        currentUser.unlockedCustomizations.contains(item.id)
+    
+    func purchaseItem(item: ShopItem) async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        guard !unlockedCustomizations.contains(item.id) else {
+            errorMessage = "You already own this item!"
+            return
+        }
+        guard userPoints >= item.cost else {
+            errorMessage = "Not enough points!"
+            return
+        }
+        
+        isPurchasing = true
+        errorMessage = ""
+        
+        do {
+            let userRef = dbRef.child("users").child(userId)
+            
+            try await userRef.child("points").setValue(ServerValue.increment(NSNumber(value: -item.cost)))
+            
+            var updatedCustomizations = self.unlockedCustomizations
+            updatedCustomizations.append(item.id)
+            try await userRef.child("unlockedCustomizations").setValue(updatedCustomizations)
+            
+            print("Successfully purchased \(item.name)")
+        } catch {
+            errorMessage = "Purchase failed: \(error.localizedDescription)"
+        }
+        
+        isPurchasing = false
     }
 }

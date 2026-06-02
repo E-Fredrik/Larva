@@ -12,6 +12,20 @@ struct MainTabView: View {
     @ObservedObject var friendVM: FriendViewModel
     @ObservedObject var questVM: QuestViewModel
     @ObservedObject var shopVM: ShopViewModel
+    
+    @StateObject private var profileVM = ProfileViewModel(currentUser:
+        User(
+        id: "USER-123",
+        username: "Maya Chen",
+        friendCode: "MCH123",
+        points: 2500,
+        currentStreak: 89,
+        dailyStepTarget: 10000,
+        friendList: ["user2", "user3"],
+        pendingFriendRequests: [],
+        unlockedCustomizations: ["ITEM-001", "ITEM-002"],
+        claimedWaypoints: [:]
+    ))
 
     var body: some View {
         TabView {
@@ -19,63 +33,27 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Map", systemImage: "map.fill")
                 }
+            
             QuestsView(viewModel: questVM)
                 .tabItem {
                     Label("Quests", systemImage: "flame.fill")
                 }
+            
             ShopView(viewModel: shopVM)
                 .tabItem {
                     Label("Shop", systemImage: "cart.fill")
                 }
+            
             FriendsView(viewModel: friendVM)
                 .tabItem {
                     Label("Friends", systemImage: "person.2.fill")
                 }
+            
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle.fill")
                 }
         }
+        .environmentObject(profileVM)
     }
-}
-
-#Preview {
-    MainTabView(
-        friendVM: FriendViewModel(
-            currentUser: User(
-                id: "1",
-                username: "Kenjo", friendCode: "ROAM-0F0K",
-                points: 100,
-                currentStreak: 100,
-                dailyStepTarget: 500,
-                friendList: [],
-                pendingFriendRequests: [],
-                unlockedCustomizations: []
-            )
-        ),
-        questVM: QuestViewModel(
-            currentUser: User(
-                id: "1",
-                username: "Kenjo", friendCode: "ROAM-0F0K",
-                points: 100,
-                currentStreak: 100,
-                dailyStepTarget: 500,
-                friendList: [],
-                pendingFriendRequests: [],
-                unlockedCustomizations: []
-            )
-        ),
-        shopVM: ShopViewModel(
-            currentUser: User(
-                id: "1",
-                username: "Kenjo", friendCode: "ROAM-0F0K",
-                points: 100,
-                currentStreak: 100,
-                dailyStepTarget: 500,
-                friendList: [],
-                pendingFriendRequests: [],
-                unlockedCustomizations: []
-            )
-        )
-    )
 }

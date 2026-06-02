@@ -8,23 +8,11 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @StateObject var viewModel = ProfileViewModel(
-        currentUser: User(
-            id: "USER-123",
-            username: "Maya Chen",
-            friendCode: "MCH123",
-            points: 2500,
-            currentStreak: 89,
-            dailyStepTarget: 10000,
-            friendList: ["user2", "user3"],
-            pendingFriendRequests: [],
-            unlockedCustomizations: ["theme_midnight", "border_gold"],
-            claimedWaypoints: [:]
-        )
-    )
+    @EnvironmentObject var viewModel: ProfileViewModel
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingSettings = false
+    @State private var showingCustomizationSheet = false
 
     var body: some View {
         NavigationStack {
@@ -60,6 +48,10 @@ struct ProfileView: View {
             ) {
                 SettingsView(viewModel: viewModel)
                     .frame(width: 320, height: 280)
+            }
+            .sheet(isPresented: $showingCustomizationSheet) {
+                CustomizationInventoryView()
+                    .environmentObject(viewModel)
             }
         }
     }
@@ -105,21 +97,25 @@ struct ProfileView: View {
 
     private var heroSection: some View {
         VStack(spacing: 12) {
-            Circle()
-                .fill(Color.mint.opacity(0.2))
-                .frame(width: 100, height: 100)
-                .overlay(
-                    Text(
-                        String(viewModel.currentUser.username.prefix(1))
-                            .uppercased()
+            
+            ZStack {
+                Circle()
+                    .fill(Color.mint.opacity(0.2))
+                    .frame(width: 100, height: 100)
+                    .overlay(
+                        Text(String(viewModel.currentUser.username.prefix(1)).uppercased())
+                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .foregroundColor(.mint)
                     )
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundColor(.mint)
-                )
-                .overlay(
-                    Circle().stroke(Color.yellow, lineWidth: 4)
-                )
-                .padding(.top, 20)
+                
+                if let borderItem = viewModel.equippedItems[ShopItem.ItemType.avatarBorder.rawValue] {
+                    Image(borderItem.id)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 115, height: 115)
+                }
+            }
+            .padding(.top, 20)
 
             VStack(spacing: 4) {
                 Text(viewModel.currentUser.username)
@@ -194,6 +190,7 @@ struct ProfileView: View {
                     .font(.headline)
                 Spacer()
                 Button("Edit") {
+                    showingCustomizationSheet = true
                 }
                 .font(.subheadline)
                 .foregroundColor(.mint)
@@ -201,9 +198,71 @@ struct ProfileView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(viewModel.equippedCustomization) { item in
-                        EquippedItemCard(item: item)
+                    let equippedItemsArray = Array(viewModel.equippedItems.values)
+                    
+                    if equippedItemsArray.isEmpty {
+                        Text("No items equipped.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                    } else {
+                        ForEach(equippedItemsArray, id: \.id) { item in
+                            EquippedItemCard(item: item)
+                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+struct CustomizationInventoryView: View {
+    @EnvironmentObject var viewModel: ProfileViewModel
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if viewModel.ownedItems.isEmpty {
+                    Text("You don't own any items yet. Visit the shop!")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(viewModel.ownedItems, id: \.id) { item in
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(item.name)
+                                    .font(.headline)
+                                Text(item.itemType.rawValue.capitalized)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            if viewModel.equippedItems[item.itemType.rawValue]?.id == item.id {
+                                Button("Unequip") {
+                                    Task { await viewModel.unequipItem(itemType: item.itemType) }
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.red)
+                            } else {
+                                Button("Equip") {
+                                    Task { await viewModel.equipItem(item: item) }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.mint)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .navigationTitle("Your Inventory")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.bold)
                 }
             }
         }
@@ -212,4 +271,18 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(ProfileViewModel(
+            currentUser: User(
+                id: "USER-123",
+                username: "Maya Chen",
+                friendCode: "MCH123",
+                points: 2500,
+                currentStreak: 89,
+                dailyStepTarget: 10000,
+                friendList: ["user2", "user3"],
+                pendingFriendRequests: [],
+                unlockedCustomizations: ["ITEM-001", "ITEM-002"],
+                claimedWaypoints: [:]
+            )
+        ))
 }
