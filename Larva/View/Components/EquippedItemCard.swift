@@ -12,9 +12,8 @@ struct EquippedItemCard: View {
     
     private var iconName: String {
         switch item.itemType {
-        case .mapTheme: return "map.fill"
+        case .appTheme: return "paintpalette.fill"
         case .avatarBorder: return "person.crop.circle"
-        case .appIcon: return "app.dashed"
         }
     }
     
@@ -22,12 +21,11 @@ struct EquippedItemCard: View {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(Color.mint.opacity(0.1))
+                    .fill(Color.primary.opacity(0.1))
                     .frame(width: 50, height: 50)
                 
                 Image(systemName: iconName)
                     .font(.title2)
-                    .foregroundColor(.mint)
             }
             
             Text(item.name)

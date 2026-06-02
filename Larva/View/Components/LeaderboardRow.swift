@@ -18,7 +18,7 @@ struct LeaderboardRow: View {
         switch rank {
         case 1: return Color.yellow
         case 2: return Color(UIColor.lightGray)
-        case 3: return Color.orange  // Bronze-ish
+        case 3: return Color.orange
         default: return Color.secondary.opacity(0.5)
         }
     }
@@ -31,10 +31,10 @@ struct LeaderboardRow: View {
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
             return formatter.string(
-                from: NSNumber(value: user.mockSteps(for: timeframe))
+                from: NSNumber(value: user.actualSteps(for: timeframe))
             ) ?? "0"
         case .distance:
-            return String(format: "%.1f km", user.mockDistance(for: timeframe))
+            return String(format: "%.1f km", user.actualDistance(for: timeframe))
         }
     }
 

@@ -13,8 +13,9 @@ struct ShopItem: Identifiable, Codable {
     var description: String
     var cost: Int
     var itemType: ItemType
-    
-    enum ItemType: String, Codable {
-        case mapTheme, avatarBorder, appIcon
+
+    enum ItemType: String, Codable, CaseIterable {
+        case appTheme = "appTheme"
+        case avatarBorder = "avatarBorder"
     }
 }

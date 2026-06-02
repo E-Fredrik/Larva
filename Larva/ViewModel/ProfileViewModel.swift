@@ -29,20 +29,29 @@ class ProfileViewModel: ObservableObject {
 
     init(currentUser: User) {
         self.currentUser = currentUser
-        
         Task {
             await fetchAllShopItemsCache()
-            fetchUserLiveUpdates()         }
-    }
-
-    func logout() {
-        do {
-            try Auth.auth().signOut()
-        } catch {
-            print("Error logging out: \(error.localizedDescription)")
+            fetchUserLiveUpdates()
         }
     }
     
+    
+    var currentAppTheme: ColorScheme? {
+        guard let themeItem = equippedItems[ShopItem.ItemType.appTheme.rawValue] else { return nil }
+        if themeItem.id == "ITEM-001" || themeItem.id == "ITEM-005" { return .dark }
+        if themeItem.id == "ITEM-004" { return .light }
+        return nil
+    }
+    
+    var currentAppTint: Color {
+        guard let themeItem = equippedItems[ShopItem.ItemType.appTheme.rawValue] else { return .mint }
+        if themeItem.id == "ITEM-001" { return .purple }
+        if themeItem.id == "ITEM-004" { return .blue }
+        if themeItem.id == "ITEM-005" { return .orange }
+        return .mint
+    }
+
+
     private func fetchAllShopItemsCache() async {
         do {
             let snapshot = try await dbRef.child("shopItems").getData()
@@ -52,7 +61,9 @@ class ProfileViewModel: ObservableObject {
                 if let dict = child.value as? [String: Any],
                    let jsonData = try? JSONSerialization.data(withJSONObject: dict),
                    let item = try? JSONDecoder().decode(ShopItem.self, from: jsonData) {
-                    self.allShopItemsCache[item.id] = item
+                    if item.itemType == .appTheme || item.itemType == .avatarBorder {
+                        self.allShopItemsCache[item.id] = item
+                    }
                 }
             }
         } catch {
@@ -62,31 +73,41 @@ class ProfileViewModel: ObservableObject {
     
     func fetchUserLiveUpdates() {
         let userId = currentUser.id
-        
         dbRef.child("users").child(userId).observe(.value) { [weak self] snapshot in
             guard let self = self, let dict = snapshot.value as? [String: Any] else { return }
             
             if let username = dict["username"] as? String { self.currentUser.username = username }
+            if let friendCode = dict["friendCode"] as? String { self.currentUser.friendCode = friendCode }
             if let points = dict["points"] as? Int { self.currentUser.points = points }
             if let streak = dict["currentStreak"] as? Int { self.currentUser.currentStreak = streak }
+            
+            self.currentUser.friendList = dict["friendList"] as? [String] ?? []
+            self.currentUser.pendingFriendRequests = dict["pendingFriendRequests"] as? [String] ?? []
             
             if let steps = dict["dailySteps"] as? Int {
                 self.stepsToday = steps
                 self.distanceToday = Double(steps) * 0.000762
+                self.currentUser.dailySteps = steps
+            } else {
+                self.stepsToday = 0; self.distanceToday = 0.0; self.currentUser.dailySteps = 0
             }
             
             if let unlockedIds = dict["unlockedCustomizations"] as? [String] {
                 self.ownedItems = unlockedIds.compactMap { self.allShopItemsCache[$0] }
+                self.currentUser.unlockedCustomizations = unlockedIds
+            } else {
+                self.ownedItems = []; self.currentUser.unlockedCustomizations = []
             }
-            if let equipmentDict = dict["equippedCustomizations"] as? [String: String] {
-                var resolvedEquipped: [String: ShopItem] = [:]
-                for (itemType, itemId) in equipmentDict {
-                    if let item = self.allShopItemsCache[itemId] {
-                        resolvedEquipped[itemType] = item
-                    }
+            
+            let equipmentDict = dict["equippedCustomizations"] as? [String: String] ?? [:]
+            var resolvedEquipped: [String: ShopItem] = [:]
+            for (itemType, itemId) in equipmentDict {
+                if let item = self.allShopItemsCache[itemId] {
+                    resolvedEquipped[itemType] = item
                 }
-                self.equippedItems = resolvedEquipped
             }
+            self.equippedItems = resolvedEquipped
+            self.currentUser.equippedCustomizations = equipmentDict
         }
     }
     
@@ -97,14 +118,8 @@ class ProfileViewModel: ObservableObject {
                 .child("equippedCustomizations")
                 .child(item.itemType.rawValue)
                 .setValue(item.id)
-                
-            if item.itemType == .appIcon {
-                await MainActor.run {
-                    changeAppIcon(to: item.id)
-                }
-            }
         } catch {
-            print("Failed to equip item: \(error.localizedDescription)")
+            print("Failed to equip item")
         }
     }
     
@@ -116,18 +131,7 @@ class ProfileViewModel: ObservableObject {
                 .child(itemType.rawValue)
                 .removeValue()
         } catch {
-            print("Failed to unequip item: \(error.localizedDescription)")
-        }
-    }
-    
-    private func changeAppIcon(to iconId: String?) {
-        guard UIApplication.shared.supportsAlternateIcons else { return }
-        UIApplication.shared.setAlternateIconName(iconId) { error in
-            if let error = error {
-                print("Error changing app icon: \(error.localizedDescription)")
-            } else {
-                print("Successfully changed app icon to \(iconId ?? "Default")")
-            }
+            print("Failed to unequip item")
         }
     }
 }

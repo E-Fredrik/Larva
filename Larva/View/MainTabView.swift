@@ -13,20 +13,6 @@ struct MainTabView: View {
     @ObservedObject var questVM: QuestViewModel
     @ObservedObject var shopVM: ShopViewModel
     
-    @StateObject private var profileVM = ProfileViewModel(currentUser:
-        User(
-        id: "USER-123",
-        username: "Maya Chen",
-        friendCode: "MCH123",
-        points: 2500,
-        currentStreak: 89,
-        dailyStepTarget: 10000,
-        friendList: ["user2", "user3"],
-        pendingFriendRequests: [],
-        unlockedCustomizations: ["ITEM-001", "ITEM-002"],
-        claimedWaypoints: [:]
-    ))
-
     var body: some View {
         TabView {
             MapHUDView()
@@ -54,6 +40,5 @@ struct MainTabView: View {
                     Label("Profile", systemImage: "person.crop.circle.fill")
                 }
         }
-        .environmentObject(profileVM)
     }
 }

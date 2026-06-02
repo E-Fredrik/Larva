@@ -10,6 +10,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: ProfileViewModel
+    
+    @EnvironmentObject var authViewModel: AuthViewModel
 
     @AppStorage("appearanceTheme") private var appearanceTheme = "System"
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
@@ -54,7 +56,7 @@ struct SettingsView: View {
 
                 Section {
                     Button(action: {
-                        viewModel.logout()
+                        authViewModel.signOut()
                         dismiss()
                     }) {
                         Text("Log Out")
@@ -100,4 +102,5 @@ struct SettingsView: View {
             )
         )
     )
+    .environmentObject(AuthViewModel()) 
 }

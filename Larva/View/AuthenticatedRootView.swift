@@ -13,37 +13,26 @@ struct AuthenticatedRootView: View {
     @StateObject var friendVM: FriendViewModel
     @StateObject var questVM: QuestViewModel
     @StateObject var shopVM: ShopViewModel
-    
     @StateObject var profileVM: ProfileViewModel
 
     init(user: User, sizeClass: UserInterfaceSizeClass?) {
         self.sizeClass = sizeClass
-
         _friendVM = StateObject(wrappedValue: FriendViewModel(currentUser: user))
         _questVM = StateObject(wrappedValue: QuestViewModel(currentUser: user))
-        
         _shopVM = StateObject(wrappedValue: ShopViewModel())
-        
         _profileVM = StateObject(wrappedValue: ProfileViewModel(currentUser: user))
     }
 
     var body: some View {
         Group {
             if sizeClass == .regular {
-                SidebarNavigationView(
-                    friendVM: friendVM,
-                    questVM: questVM,
-                    shopVM: shopVM
-                )
+                SidebarNavigationView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
             } else {
-                MainTabView(
-                    friendVM: friendVM,
-                    questVM: questVM,
-                    shopVM: shopVM
-                )
+                MainTabView(friendVM: friendVM, questVM: questVM, shopVM: shopVM)
             }
         }
-        .tint(.mint)
         .environmentObject(profileVM)
+        .tint(profileVM.currentAppTint)
+        .preferredColorScheme(profileVM.currentAppTheme)
     }
 }

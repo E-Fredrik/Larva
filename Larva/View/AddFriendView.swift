@@ -13,96 +13,42 @@ struct AddFriendView: View {
     @State private var friendCode: String = ""
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                VStack(spacing: 24) {
-                    HStack {
-                        TextField("Enter Friend Code", text: $friendCode)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .autocapitalization(.allCharacters)
-
-                        Button("Add") {
-                            viewModel.sendFriendRequest(to: friendCode)
-                            friendCode = ""
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.mint)
-                        .disabled(friendCode.isEmpty)
-                    }
-                    .padding()
-
-                    if !viewModel.pendingRequests.isEmpty {
-                        VStack(alignment: .leading) {
-                            Text("Pending Requests")
-                                .font(.headline)
-                                .padding(.horizontal)
-
-                            List {
-                                ForEach(viewModel.pendingRequests) { request in
-                                    HStack {
-                                        Text(request.username)
-                                            .font(.subheadline)
-                                        Spacer()
-                                        Button(action: {
-                                            viewModel.acceptRequest(
-                                                from: request
-                                            )
-                                        }) {
-                                            Image(
-                                                systemName:
-                                                    "checkmark.circle.fill"
-                                            )
-                                            .foregroundColor(.mint)
-                                            .font(.title2)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        Button(action: {
-                                            viewModel.declineRequest(
-                                                from: request
-                                            )
-                                        }) {
-                                            Image(
-                                                systemName: "xmark.circle.fill"
-                                            )
-                                            .foregroundColor(.red)
-                                            .font(.title2)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                            }
-                            .listStyle(.plain)
-                        }
-                    }
-
-                    Spacer()
-
-                    Text(
-                        "Share your unique code with friends so they can add you to their leaderboard."
-                    )
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.thinMaterial)
-                    .cornerRadius(16)
-                    .padding(.horizontal)
-                    .padding(.bottom, 24)
+        NavigationStack {
+            VStack(spacing: 24) {
+                Text("Enter Friend Code")
+                    .font(.title2).fontWeight(.bold)
+                
+                TextField("Code (e.g. ABC123)", text: $friendCode)
+                    .textFieldStyle(.roundedBorder)
+                    .autocapitalization(.allCharacters)
+                    .padding(.horizontal, 32)
+                
+                Button(action: {
+                    Task { await viewModel.sendFriendRequest(to: friendCode) }
+                }) {
+                    Text("Send Request")
+                        .foregroundColor(.white).padding().frame(maxWidth: .infinity)
+                        .background(Color.mint).cornerRadius(12).padding(.horizontal, 32)
                 }
-                .navigationTitle("Add Friend")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            dismiss()
-                        }
+                Spacer()
+            }
+            .padding(.top, 40)
+            .navigationTitle("Add Friend")
+            .navigationBarTitleDisplayMode(.inline)
+            .alert("Friend Request", isPresented: $viewModel.showAlert) {
+                Button("OK", role: .cancel) {
+                    if viewModel.alertMessage.contains("successfully") {
+                        dismiss()
                     }
+                }
+            } message: {
+                Text(viewModel.alertMessage)
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") { dismiss() }
                 }
             }
-        } else {
-            // Fallback on earlier versions
         }
     }
 }
