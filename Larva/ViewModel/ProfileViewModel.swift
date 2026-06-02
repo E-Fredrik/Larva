@@ -24,7 +24,7 @@ class ProfileViewModel: ObservableObject {
     @Published var ownedItems: [ShopItem] = []
     @Published var equippedItems: [String: ShopItem] = [:]
     
-    private let dbRef = Database.database().reference()
+    private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     private var allShopItemsCache: [String: ShopItem] = [:]
 
     init(currentUser: User) {

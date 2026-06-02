@@ -50,8 +50,7 @@ struct FirebaseAuthSession: AuthSessionProtocol {
 
 // Real Firebase Database Wrapper
 struct FirebaseWaypointDatabase: WaypointDatabaseProtocol {
-    private let dbRef = Database.database().reference()
-
+    private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     func observeGlobalWaypoints(completion: @escaping ([MapWaypoint]) -> Void) {
         dbRef.child("waypoints").observe(.value) { snapshot in
             var newWaypoints: [MapWaypoint] = []

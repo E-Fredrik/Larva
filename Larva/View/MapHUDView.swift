@@ -153,7 +153,6 @@ struct MapHUDView: View {
                 .padding(.bottom, 24)
             }
         }
-        .preferredColorScheme(mapThemeColorScheme)
         .onChange(of: stepTracker.session.isRunning) { oldValue, isRunning in
             if isRunning {
                 locationManager.startRecordingWorkout()
@@ -182,16 +181,5 @@ struct MapHUDView: View {
         } message: {
             Text("We couldn't calculate a walking route to that location. It might be too far or unreachable on foot.")
         }
-    }
-    private var mapThemeColorScheme: ColorScheme? {
-        guard let themeItem = profileVM.equippedItems[ShopItem.ItemType.mapTheme.rawValue] else {
-            return nil
-        }
-        
-        if themeItem.id == "ITEM-001" {
-            return .dark
-        }
-        
-        return nil
     }
 }

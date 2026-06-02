@@ -28,8 +28,7 @@ class FriendViewModel: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
 
-    private let dbRef = Database.database().reference()
-
+    private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     var leaderboard: [User] {
         var allUsers = friends
         if !allUsers.contains(where: { $0.id == currentUser.id }) { allUsers.append(currentUser) }
@@ -86,45 +85,58 @@ class FriendViewModel: ObservableObject {
     }
 
     func sendFriendRequest(to code: String) async {
-        guard !code.isEmpty else { return }
-        let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard cleanCode != currentUser.friendCode else {
-            self.alertMessage = "You cannot add yourself!"
-            self.showAlert = true
-            return
-        }
-        
-        do {
-            let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: cleanCode)
-            let snapshot = try await query.getData()
+            guard !code.isEmpty else { return }
+            let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            guard snapshot.exists(),
-                  let children = snapshot.children.allObjects as? [DataSnapshot],
-                  let firstChild = children.first,
-                  let dict = firstChild.value as? [String: Any],
-                  let jsonData = try? JSONSerialization.data(withJSONObject: dict),
-                  var targetUser = try? JSONDecoder().decode(User.self, from: jsonData) else {
-                
-                self.alertMessage = "User with code \(cleanCode) not found."
+            guard cleanCode != currentUser.friendCode else {
+                self.alertMessage = "You cannot add yourself!"
                 self.showAlert = true
                 return
             }
             
-            if targetUser.friendList.contains(currentUser.id) {
-                self.alertMessage = "You are already friends with \(targetUser.username)."
-            } else if targetUser.pendingFriendRequests.contains(currentUser.id) {
-                self.alertMessage = "Request already sent to \(targetUser.username)."
-            } else {
-                targetUser.pendingFriendRequests.append(currentUser.id)
-                try await dbRef.child("users").child(targetUser.id).child("pendingFriendRequests").setValue(targetUser.pendingFriendRequests)
-                self.alertMessage = "Request successfully sent to \(targetUser.username)!"
+            do {
+                let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: cleanCode)
+                let snapshot = try await query.getData()
+                
+                guard snapshot.exists(),
+                      let children = snapshot.children.allObjects as? [DataSnapshot],
+                      let firstChild = children.first,
+                      let dict = firstChild.value as? [String: Any] else {
+                    
+                    self.alertMessage = "User with code \(cleanCode) not found."
+                    self.showAlert = true
+                    return
+                }
+                
+                let jsonData = try JSONSerialization.data(withJSONObject: dict)
+                var targetUser = try JSONDecoder().decode(User.self, from: jsonData)
+                
+                if targetUser.friendList.contains(currentUser.id) {
+                    self.alertMessage = "You are already friends with \(targetUser.username)."
+                } else if targetUser.pendingFriendRequests.contains(currentUser.id) {
+                    self.alertMessage = "Request already sent to \(targetUser.username)."
+                } else {
+                    targetUser.pendingFriendRequests.append(currentUser.id)
+                    try await dbRef.child("users").child(targetUser.id).child("pendingFriendRequests").setValue(targetUser.pendingFriendRequests)
+                    self.alertMessage = "Request successfully sent to \(targetUser.username)!"
+                }
+                
+            } catch let DecodingError.dataCorrupted(context) {
+                print("❌ Decoding Error: Data Corrupted: \(context)")
+                self.alertMessage = "Data format error."
+            } catch let DecodingError.keyNotFound(key, context) {
+                print("❌ Decoding Error: Key '\(key.stringValue)' not found: \(context.debugDescription)")
+                self.alertMessage = "Database error: Missing data."
+            } catch let DecodingError.typeMismatch(type, context) {
+                print("❌ Decoding Error: Type mismatch for type \(type): \(context.debugDescription)")
+                self.alertMessage = "Database error: Wrong data type."
+            } catch {
+                print("❌ Firebase / Network Error: \(error.localizedDescription)")
+                self.alertMessage = "Error sending request: \(error.localizedDescription)"
             }
-        } catch {
-            self.alertMessage = "Error sending request."
+            
+            self.showAlert = true
         }
-        self.showAlert = true
-    }
 
     func acceptRequest(from user: User) {
         if !currentUser.friendList.contains(user.id) { currentUser.friendList.append(user.id) }
@@ -150,6 +162,23 @@ class FriendViewModel: ObservableObject {
             do {
                 try await dbRef.child("users").child(currentUser.id).child("pendingFriendRequests").setValue(currentUser.pendingFriendRequests)
             } catch { print("Error declining request") }
+        }
+    }
+    
+    func removeFriend(_ user: User) {
+        currentUser.friendList.removeAll { $0 == user.id }
+        
+        Task {
+            do {
+                try await dbRef.child("users").child(currentUser.id).child("friendList").setValue(currentUser.friendList)
+                var targetFriendList = user.friendList
+                if targetFriendList.contains(currentUser.id) {
+                    targetFriendList.removeAll { $0 == currentUser.id }
+                    try await dbRef.child("users").child(user.id).child("friendList").setValue(targetFriendList)
+                }
+            } catch {
+                print("Error removing friend: \(error)")
+            }
         }
     }
 }

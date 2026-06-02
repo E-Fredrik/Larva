@@ -15,15 +15,13 @@ struct ShopItemCard: View {
     
     private var iconName: String {
         switch item.itemType {
-        case .mapTheme: return "map.fill"
+        case .appTheme: return "paintpalette.fill"
         case .avatarBorder: return "person.crop.circle"
-        case .appIcon: return "app.dashed"
         }
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Icon & Type Header
             HStack(alignment: .top) {
                 ZStack {
                     Circle()
@@ -44,7 +42,6 @@ struct ShopItemCard: View {
                 }
             }
             
-            // Text Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
                     .font(.headline)
@@ -58,9 +55,8 @@ struct ShopItemCard: View {
             
             Spacer(minLength: 8)
             
-            // Purchase Button Area
             if isOwned {
-                Text("Equipped")
+                Text("Owned")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.mint)

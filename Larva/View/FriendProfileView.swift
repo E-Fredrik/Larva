@@ -101,5 +101,3 @@ struct FriendProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-
-

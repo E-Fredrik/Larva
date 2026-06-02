@@ -26,8 +26,7 @@ protocol StepTrackerDatabaseService {
 }
 
 struct FirebaseStepTrackerDatabase: StepTrackerDatabaseService {
-    private let dbRef = Database.database().reference()
-
+    private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     func fetchDailyTarget(userId: String) async throws -> Int? {
         let snapshot = try await dbRef.child("users").child(userId).child(
             "dailyStepTarget"
