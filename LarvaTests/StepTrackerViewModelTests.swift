@@ -125,47 +125,58 @@ struct StepTrackerViewModelTests {
 
     @Test("Fetch Data from Firebase")
     func fetchDataFromFirebase() async throws {
-        let testUserId = try await FirebaseIntegrationHelper.createAnonymousTestUser()
+        let testUserId =
+            try await FirebaseIntegrationHelper.createAnonymousTestUser()
 
         defer {
             Task {
                 await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
             }
         }
-        
-        let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
-        
+
+        let dbRef = Database.database(
+            url:
+                "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app"
+        ).reference()
+
         try await dbRef.child("users").child(testUserId).child(
             "dailyStepTarget"
         ).setValue(8888)
 
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+
+        
         await vm.fetchUserDailyTarget()
+
         #expect(
             vm.dailyTarget == 8888,
-            "ViewModel failed to fetch the custom target from Firebase"
+            "ViewModel failed to fetch the custom target from Firebase. Expected 8888, but got \(vm.dailyTarget)"
         )
     }
 
     @Test("Upload data to firebase")
     func uploadDataToFirebase() async throws {
-        let testUserId = try await FirebaseIntegrationHelper.createAnonymousTestUser()
-        
+        let testUserId =
+            try await FirebaseIntegrationHelper.createAnonymousTestUser()
+
         defer {
             Task {
                 await FirebaseIntegrationHelper.cleanupTestData(for: testUserId)
             }
         }
-        
-        // FIX 2: Point to correct Asian server
-        let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
-        
+
+        let dbRef = Database.database(
+            url:
+                "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app"
+        ).reference()
+
         let dummyRoute = [RouteCoordinate(lat: -7.2504, lng: 112.7688)]
         vm.attachRouteToSession(dummyRoute)
-        
-        try await Task.sleep(nanoseconds: 2_000_000_000)  //Sleeps for 2 seconds
-        
-        // FIX 3: Replaced .getData() with .getLiveSnapshot() to bypass test simulator disconnects
-        let historySnapshot = try await dbRef.child("users").child(testUserId).child("workoutHistory").getLiveSnapshot()
+
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+
+        let historySnapshot = try await dbRef.child("users").child(testUserId)
+            .child("workoutHistory").getLiveSnapshot()
 
         #expect(
             historySnapshot.exists(),

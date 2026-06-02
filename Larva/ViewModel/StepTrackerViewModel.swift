@@ -69,7 +69,7 @@ class StepTrackerViewModel: ObservableObject {
     private let passivePedometer = CMPedometer()
     private let activePedometer = CMPedometer()
     
-    // FIX 1: Pointing to the correct Regional Firebase Server
+    
     private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     
     private var cancellables = Set<AnyCancellable>()
@@ -146,7 +146,7 @@ class StepTrackerViewModel: ObservableObject {
     func fetchUserDailyTarget() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         do {
-            // FIX 2: Replaced .getData() with .getLiveSnapshot() to bypass simulator offline bug
+            // FIX 2: Use Live Snapshot to bypass simulator block
             let snapshot = try await dbRef.child("users").child(userId).child(
                 "dailyStepTarget"
             ).getLiveSnapshot()
@@ -381,12 +381,15 @@ class StepTrackerViewModel: ObservableObject {
     }
 }
 
+// MARK: - Testing Helpers
 #if DEBUG
 extension StepTrackerViewModel {
+    /// Forces a specific daily target for unit testing calculations
     func test_setTarget(_ target: Int) {
         self.dailyTarget = target
     }
     
+    /// Injects fake pedometer data to bypass the simulator's lack of CoreMotion capabilities
     func test_injectMetrics(passiveSteps: Int, activeSteps: Int, distance: Double, pace: Double) {
         self.dailySteps = passiveSteps + activeSteps
         self.session.steps = activeSteps
