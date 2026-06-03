@@ -430,3 +430,18 @@ class StepTrackerViewModel: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension StepTrackerViewModel {
+    func test_setTarget(_ target: Int) {
+        self.dailyTarget = target
+    }
+
+    func test_injectMetrics(passiveSteps: Int, activeSteps: Int, distance: Double, pace: Double) {
+        self.dailySteps = passiveSteps + activeSteps
+        self.session.steps = activeSteps
+        self.session.distanceInMeters = distance
+        self.session.currentPace = pace
+    }
+}
+#endif

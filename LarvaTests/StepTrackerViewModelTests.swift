@@ -30,10 +30,10 @@ struct StepTrackerViewModelTests {
         #expect(vm.dailyProgress == 0.0)
     }
 
-    //2. Progress Calculation
+    
     @Test("Progress Calculation")
     func dailyProgress() {
-        //Inject hardcoded metrics to simulate a workout session, since CMPedometer does not work in unit test/Simulation
+        
         vm.test_setTarget(10000)
         vm.test_injectMetrics(
             passiveSteps: 5000,
@@ -44,12 +44,12 @@ struct StepTrackerViewModelTests {
         #expect(vm.dailyProgress == 0.5)
     }
 
-    //3. Formatting Distance
+    
     @Test("Formatted Distance outputs correctly based on distance length")
     func formattedDistance() {
         vm.toggleWorkoutSession()
 
-        // Test Under 1km (Should format as meters and round up)
+        
         vm.test_injectMetrics(
             passiveSteps: 0,
             activeSteps: 100,
@@ -58,7 +58,7 @@ struct StepTrackerViewModelTests {
         )
         #expect(vm.formattedDistance == "451 m")
 
-        // Test Over 1km (Should format as kilometers with 2 decimals)
+        
         vm.test_injectMetrics(
             passiveSteps: 0,
             activeSteps: 2000,
@@ -68,12 +68,12 @@ struct StepTrackerViewModelTests {
         #expect(vm.formattedDistance == "1.54 km")
     }
 
-    //4. Formatting Pace
+    
     @Test("Formatted Pace converts seconds per meter to MM:SS")
     func formattedPace() {
         vm.toggleWorkoutSession()
 
-        // Test zero state
+        
         #expect(vm.formattedPace == "0:00")
 
         vm.test_injectMetrics(
@@ -97,7 +97,7 @@ struct StepTrackerViewModelTests {
         #expect(vm.session.isRunning == false)
     }
 
-    //6. Step Combination Logic
+    
     @Test("Daily steps should combine passive and active steps correctly")
     func combinedStepTracking() {
         vm.test_injectMetrics(
@@ -143,9 +143,8 @@ struct StepTrackerViewModelTests {
             "dailyStepTarget"
         ).setValue(8888)
 
-        try await Task.sleep(nanoseconds: 1_500_000_000)
+        try await Task.sleep(nanoseconds: 5_000_000_000)
 
-        
         await vm.fetchUserDailyTarget()
 
         #expect(
@@ -175,21 +174,31 @@ struct StepTrackerViewModelTests {
 
         try await Task.sleep(nanoseconds: 2_000_000_000)
 
+        
         let historySnapshot = try await dbRef.child("users").child(testUserId)
-            .child("workoutHistory").getLiveSnapshot()
+            .child("workoutHistory").getData()
 
         #expect(
             historySnapshot.exists(),
             "ViewModel failed to upload the workout session to Firebase"
         )
 
-        let historyDict = historySnapshot.value as? [String: Any]
-        let firstSession = historyDict?.values.first as? [String: Any]
-        let routeArray = firstSession?["route"] as? [[String: Double]]
+        
+        if let historyDict = historySnapshot.value as? [String: Any],
+            let firstSession = historyDict.values.first as? [String: Any],
+            let routeArray = firstSession["route"] as? [[String: Double]],
+            let firstRoutePoint = routeArray.first,
+            let lat = firstRoutePoint["lat"]
+        {
 
-        #expect(
-            routeArray?.first?["lat"] == -7.2504,
-            "ViewModel uploaded incorrect GPS coordinates"
-        )
+            #expect(
+                lat == -7.2504,
+                "ViewModel uploaded incorrect GPS coordinates"
+            )
+        } else {
+            Issue.record(
+                "Failed to safely decode the uploaded workout history from Firebase"
+            )
+        }
     }
 }
