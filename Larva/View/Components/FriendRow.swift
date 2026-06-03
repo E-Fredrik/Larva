@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+/// A simple list row displaying a friend's username and current point total.
+/// Used in `FriendsView` to render each entry in the accepted friends list.
 struct FriendRow: View {
     let user: User
     

@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+/// The social hub of the application.
+///
+/// Displays the user's friend code, incoming pending friend requests, and a ranked
+/// leaderboard of accepted friends. A floating action button (FAB) in the bottom
+/// right opens the `AddFriendView` sheet.
 struct FriendsView: View {
     @ObservedObject var viewModel: FriendViewModel
     @State private var showingAddFriend = false

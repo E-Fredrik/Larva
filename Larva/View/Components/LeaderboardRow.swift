@@ -7,13 +7,23 @@
 
 import SwiftUI
 
+/// A single row in the leaderboard list, showing rank, avatar initials, username, and score.
+///
+/// - Ranks 1–3 receive gold/silver/bronze badge colours respectively.
+/// - The current user's row gets a yellow border and a "You" badge for quick identification.
+/// - `displayValue` is computed from the selected metric and timeframe passed in by the parent.
 struct LeaderboardRow: View {
     let user: User
+    /// Position of this user in the sorted leaderboard (1-indexed).
     let rank: Int
+    /// Which metric to display (streaks, steps, or distance).
     let metric: LeaderboardMetric
+    /// Time window used to calculate steps and distance values.
     let timeframe: LeaderboardTimeframe
+    /// Whether this row represents the signed-in user (controls highlighting).
     let isCurrentUser: Bool
 
+    /// Returns the appropriate badge colour for the top three ranks.
     private var rankColor: Color {
         switch rank {
         case 1: return Color.yellow
@@ -23,6 +33,7 @@ struct LeaderboardRow: View {
         }
     }
 
+    /// Formats the user's score for the selected `metric` and `timeframe`.
     private var displayValue: String {
         switch metric {
         case .streaks:
@@ -43,6 +54,7 @@ struct LeaderboardRow: View {
         }
     }
 
+    /// Returns the SF Symbol name that visually represents the selected metric.
     private var metricIcon: String {
         switch metric {
         case .streaks: return "flame.fill"

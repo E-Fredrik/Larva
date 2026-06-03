@@ -9,29 +9,41 @@ import Combine
 import Foundation
 import FirebaseDatabase
 
+/// Metrics available for comparing users on the leaderboard.
 enum LeaderboardMetric: String, CaseIterable {
     case streaks = "Streaks"; case steps = "Steps"; case distance = "Distance"
 }
 
+/// Time windows used to filter leaderboard step/distance scores.
 enum LeaderboardTimeframe: String, CaseIterable {
     case daily = "Daily"; case weekly = "Weekly"; case monthly = "Monthly"
 }
 
+/// Manages the user's social graph: friends list, pending friend requests, and the
+/// leaderboard that ranks all friends (plus the current user) by the selected metric.
 @MainActor
 class FriendViewModel: ObservableObject {
+    /// The live profile of the currently logged-in user, kept up-to-date via Firebase listener.
     @Published var currentUser: User
+    /// Full `User` objects for each accepted friend.
     @Published var friends: [User] = []
+    /// Full `User` objects for incoming friend requests not yet accepted or declined.
     @Published var pendingRequests: [User] = []
     
+    /// Which stat column is currently highlighted on the leaderboard.
     @Published var selectedMetric: LeaderboardMetric = .streaks
+    /// Which time window is used to compute step/distance scores.
     @Published var selectedTimeframe: LeaderboardTimeframe = .weekly
     
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
+    /// `true` while a friend request is being sent to Firebase.
     @Published var isProcessing: Bool = false
 
     private let dbRef = Database.database().reference()
 
+    /// A sorted list of all friends plus the current user, ranked by `selectedMetric`.
+    /// Always includes the current user so they can see their own standing.
     var leaderboard: [User] {
         var allUsers = friends
         if !allUsers.contains(where: { $0.id == currentUser.id }) { allUsers.append(currentUser) }
@@ -49,6 +61,9 @@ class FriendViewModel: ObservableObject {
         listenForFriendUpdates()
     }
     
+    /// Safely decodes a `User` from a raw Firebase dictionary by supplying default values
+    /// for any missing fields. This prevents crashes when reading profiles created by older
+    /// app versions that didn't persist every field.
     private func safeDecodeUser(from dict: [String: Any], key: String) -> User? {
         var safeDict = dict
         if safeDict["id"] == nil { safeDict["id"] = key }
@@ -71,6 +86,9 @@ class FriendViewModel: ObservableObject {
         return user
     }
     
+    /// Attaches a real-time Firebase listener to the current user's node.
+    /// Whenever the database record changes (e.g. a friend accepts a request),
+    /// this method refreshes `currentUser` and triggers a fetch of updated friend profiles.
     private func listenForFriendUpdates() {
         dbRef.child("users").child(currentUser.id).observe(.value) { [weak self] snapshot in
             guard let self = self, let dict = snapshot.value as? [String: Any] else { return }
@@ -82,6 +100,8 @@ class FriendViewModel: ObservableObject {
         }
     }
     
+    /// Fetches full `User` profiles for the given friend and request UIDs in parallel.
+    /// Results replace the `friends` and `pendingRequests` arrays entirely.
     private func fetchDetailedUsers(friendIds: [String], requestIds: [String]) async {
         var fetchedFriends: [User] = []; var fetchedRequests: [User] = []
         
@@ -104,6 +124,11 @@ class FriendViewModel: ObservableObject {
         self.pendingRequests = fetchedRequests
     }
 
+    /// Sends a friend request to the user identified by `code`.
+    ///
+    /// Looks up the target user by their `friendCode` field in Firebase, then appends
+    /// the current user's UID to the target's `pendingFriendRequests` array.
+    /// Handles error cases: self-add, already-friends, already-sent, user-not-found.
     func sendFriendRequest(to code: String) {
         self.isProcessing = true
         
@@ -169,6 +194,9 @@ class FriendViewModel: ObservableObject {
         }
     }
 
+    /// Accepts an incoming friend request from `user`.
+    /// Optimistically updates both local arrays, then persists the mutual
+    /// friendship to both users' `friendList` nodes in Firebase.
     func acceptRequest(from user: User) {
         if !currentUser.friendList.contains(user.id) {
             currentUser.friendList.append(user.id)
@@ -193,6 +221,8 @@ class FriendViewModel: ObservableObject {
         }
     }
 
+    /// Declines an incoming friend request, removing the requester from
+    /// `pendingFriendRequests` both locally and in Firebase.
     func declineRequest(from user: User) {
         // Optimistic UI Update
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
@@ -203,6 +233,8 @@ class FriendViewModel: ObservableObject {
         }
     }
     
+    /// Removes `user` from the current user's friend list and also removes the current
+    /// user from the friend's list to keep the relationship symmetric.
     func removeFriend(_ user: User) {
         currentUser.friendList.removeAll { $0 == user.id }
         friends.removeAll { $0.id == user.id }
@@ -216,7 +248,12 @@ class FriendViewModel: ObservableObject {
     }
 }
 
+// MARK: - Leaderboard Helpers
+
 extension User {
+    /// Returns an estimated step count for the given timeframe.
+    /// For weekly/monthly, the streak is used as a multiplier to approximate past activity
+    /// (since only `dailySteps` is stored, not a full history).
     func actualSteps(for timeframe: LeaderboardTimeframe) -> Int {
         switch timeframe {
         case .daily: return self.dailySteps
@@ -224,5 +261,7 @@ extension User {
         case .monthly: return self.dailySteps + (self.currentStreak * 5000)
         }
     }
+    /// Converts the estimated step count for the timeframe into kilometres.
+    /// Uses the standard average stride length of 0.762 m.
     func actualDistance(for timeframe: LeaderboardTimeframe) -> Double { return Double(actualSteps(for: timeframe)) * 0.000762 }
 }

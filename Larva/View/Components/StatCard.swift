@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+/// A compact stat tile used in the Friends screen to display a single user metric.
+/// Identical in purpose to `StatBox` but uses smaller font sizes (`.title2` icon, `.title3` value)
+/// to fit more cleanly into the friends detail grid.
 struct StatCard: View {
     let title: String
     let value: String

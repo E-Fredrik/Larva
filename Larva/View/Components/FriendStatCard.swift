@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+/// A stat tile used in the friend detail sheet to surface a single metric
+/// (e.g. streak count or total points) with a coloured icon and a label.
+/// Designed to be placed in a grid alongside similar cards for quick comparison.
 struct FriendStatCard: View {
     let title: String
     let value: String

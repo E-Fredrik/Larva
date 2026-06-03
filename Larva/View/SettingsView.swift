@@ -7,14 +7,26 @@
 
 import SwiftUI
 
+/// A settings sheet accessible from `ProfileView` for app-level preferences.
+///
+/// Most settings here (`appearanceTheme`, `notificationsEnabled`, `privacySetting`) are
+/// persisted locally via `@AppStorage` and are not synced to Firebase — they control
+/// the local device experience only.
+///
+/// The **Log Out** action calls `AuthViewModel.signOut()` and dismisses the sheet,
+/// which causes `ContentView` to observe the auth state change and show `LoginView`.
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
+    /// The profile view model is observed here to allow future Firebase-backed settings.
     @ObservedObject var viewModel: ProfileViewModel
     
     @EnvironmentObject var authViewModel: AuthViewModel
 
+    /// Controls the system colour scheme override (System/Light/Dark). Stored in `UserDefaults`.
     @AppStorage("appearanceTheme") private var appearanceTheme = "System"
+    /// Whether the app will attempt to schedule local notifications.
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    /// Who can see the user's stats on the leaderboard (UI only, not yet enforced in rules).
     @AppStorage("privacySetting") private var privacySetting = "Friends Only"
 
     var body: some View {

@@ -7,9 +7,14 @@
 
 import SwiftUI
 
+/// Displays a single equipped cosmetic item (appTheme or avatarBorder) on the Profile screen.
+///
+/// Shows an icon chosen by `itemType`, the item's name, and its category label.
+/// Used in a horizontal scroll row inside `ProfileView` to represent all currently equipped items.
 struct EquippedItemCard: View {
     let item: ShopItem
     
+    /// Maps the item's `ItemType` to an SF Symbol for the icon displayed in the card.
     private var iconName: String {
         switch item.itemType {
         case .appTheme: return "paintpalette.fill"

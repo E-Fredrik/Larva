@@ -7,9 +7,15 @@
 
 import SwiftUI
 
+/// A pill-shaped toggle button used as a filter selector on the leaderboard screen.
+///
+/// When `isSelected` is `true` the pill becomes filled with the accent colour and the
+/// label switches to bold. Tapping the pill calls `action`, which the parent uses to
+/// update the `selectedMetric` or `selectedTimeframe` state.
 struct MetricPill: View {
     let title: String
     let icon: String
+    /// Whether this pill represents the currently active filter option.
     let isSelected: Bool
     let action: () -> Void
     

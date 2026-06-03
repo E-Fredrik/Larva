@@ -7,10 +7,16 @@
 
 import SwiftUI
 
+/// The sign-in screen shown when the user is not authenticated.
+///
+/// Reads `authViewModel.isLoading` and `authViewModel.errorMessage` to show
+/// inline feedback while the Firebase auth call is in-flight or after failure.
+/// Navigation to `SignUpView` is handled via a `NavigationStack` destination.
 struct LoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var email = ""
     @State private var password = ""
+    /// Controls whether the `SignUpView` is pushed onto the navigation stack.
     @State private var showSignUp = false
     
     var body: some View {

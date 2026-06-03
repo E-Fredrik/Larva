@@ -11,13 +11,20 @@ import FirebaseAuth
 import FirebaseDatabase
 import Foundation
 
+// MARK: - Database Protocol & Implementation
+
+/// Abstracts Firebase operations used by `StepTrackerViewModel` so they can be
+/// replaced with mock objects during unit testing.
 protocol StepTrackerDatabaseService {
+    /// Fetches the user's preferred daily step target from Firebase.
     func fetchDailyTarget(userId: String) async throws -> Int?
+    /// Saves a completed workout session to `users/<uid>/workoutHistory/<sessionId>`.
     func saveWorkoutHistory(
         userId: String,
         sessionId: String,
         session: WorkoutData
     ) async throws
+    /// Writes or updates today's aggregated activity data to `users/<uid>/dailyActivity/<date>`.
     func syncDailyActivity(
         userId: String,
         dateString: String,
@@ -25,6 +32,7 @@ protocol StepTrackerDatabaseService {
     ) async throws
 }
 
+/// Production Firebase implementation of `StepTrackerDatabaseService`.
 struct FirebaseStepTrackerDatabase: StepTrackerDatabaseService {
     private let dbRef = Database.database().reference()
 
@@ -54,39 +62,70 @@ struct FirebaseStepTrackerDatabase: StepTrackerDatabaseService {
     }
 }
 
+// MARK: - ViewModel
+
+/// Tracks the user's step count and workout metrics using `CMPedometer`.
+///
+/// Architecture uses two separate `CMPedometer` instances:
+///  - `passivePedometer`: Always-on background counter that accumulates daily steps from midnight.
+///  - `activePedometer`: Active during a workout session, counting steps from session start.
+///
+/// When a workout starts, passive tracking pauses (to avoid double-counting) and the active
+/// pedometer takes over. When the session ends, passive tracking resumes from where it left off.
+///
+/// Points are awarded in two ways:
+///  1. **Passive**: 1 point per 100 steps accumulated during the day.
+///  2. **Active**: `(steps / 20) * paceMultiplier` points, where faster pace earns up to 2×.
+///  A bonus of 250 points is awarded the first time the daily target is met each day.
 @MainActor
 class StepTrackerViewModel: ObservableObject {
+    /// Today's total step count (passive + active combined).
     @Published private(set) var dailySteps: Int = 0
+    /// The step goal the user is trying to reach today (fetched from Firebase).
     @Published var dailyTarget: Int = 5000
+    /// The current workout session data (steps, distance, pace, route).
     @Published private(set) var session: WorkoutData
 
+    /// Fraction of today's step target achieved. Clamped between 0.0 and any positive value.
     var dailyProgress: Double {
         guard dailyTarget > 0 else { return 0.0 }
         return Double(dailySteps) / Double(dailyTarget)
     }
 
+    /// Background pedometer for continuous daily step counting.
     private let passivePedometer = CMPedometer()
+    /// Active pedometer used only during a workout session.
     private let activePedometer = CMPedometer()
     private let dbRef = Database.database().reference()
     private var cancellables = Set<AnyCancellable>()
 
+    /// Steps recorded by `passivePedometer` before the workout started.
+    /// Used to keep `dailySteps` accurate while the active pedometer runs.
     private var dailyBaselineBeforeWorkout: Int = 0
+    /// Unique ID generated at workout start, used as the Firebase key for the session.
     private var currentSessionId: String = ""
 
+    /// Firebase UID of the currently logged-in user, or "guest" as a fallback.
     private var currentUserId: String {
         Auth.auth().currentUser?.uid ?? "guest"
     }
 
+    /// Persisted per-user ISO date string of the last day tracking was active.
+    /// Used to detect when midnight has crossed and a new day should start.
     private var lastTrackedDateString: String {
         get { UserDefaults.standard.string(forKey: "\(currentUserId)_lastTrackedDateString") ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastTrackedDateString") }
     }
 
+    /// Number of passive steps that have already been rewarded with points.
+    /// Stored per-user in `UserDefaults` so rewards aren't duplicated across app launches.
     private var lastRewardedPassiveSteps: Int {
         get { UserDefaults.standard.integer(forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
         set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
     }
 
+    /// `true` once the 250-point daily goal bonus has been given today.
+    /// Prevents the bonus from being awarded more than once per day.
     private var hasRewardedDailyGoal: Bool {
         get { UserDefaults.standard.bool(forKey: "\(currentUserId)_hasRewardedDailyGoal") }
         set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_hasRewardedDailyGoal") }
@@ -124,6 +163,8 @@ class StepTrackerViewModel: ObservableObject {
             }.store(in: &cancellables)
     }
     
+    /// Checks if the calendar day has changed since the last time tracking ran.
+    /// If a new day is detected, resets step count, reward counters, and returns `true`.
     private func checkAndResetNewDay() -> Bool {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -139,6 +180,8 @@ class StepTrackerViewModel: ObservableObject {
         return false
     }
 
+    /// Fetches the user's `dailyStepTarget` from Firebase.
+    /// Defaults to 5,000 if the value is missing or the fetch fails.
     func fetchUserDailyTarget() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         do {
@@ -154,6 +197,9 @@ class StepTrackerViewModel: ObservableObject {
         }
     }
 
+    /// Starts the background (passive) pedometer which queries cumulative steps since midnight.
+    /// If a new day is detected, it resets the counters before starting.
+    /// The pedometer continues reporting updates in the background via `startUpdates(from:)`.
     func startPassiveTracking() {
         guard CMPedometer.isStepCountingAvailable() else { return }
 
@@ -164,6 +210,7 @@ class StepTrackerViewModel: ObservableObject {
 
         passivePedometer.stopUpdates()
 
+        // Snapshot query to catch up on any steps missed before this call.
         passivePedometer.queryPedometerData(from: midnight, to: today) {
             [weak self] data, error in
             if let data = data, error == nil {
@@ -174,6 +221,7 @@ class StepTrackerViewModel: ObservableObject {
             }
         }
 
+        // Then start live updates that fire continuously as more steps are taken.
         passivePedometer.startUpdates(from: midnight) {
             [weak self] data, error in
             guard let self = self, let data = data, error == nil else { return }
@@ -190,6 +238,7 @@ class StepTrackerViewModel: ObservableObject {
         }
     }
 
+    /// Toggles the workout session on or off. Delegates to `startActiveWorkout` / `stopActiveWorkout`.
     func toggleWorkoutSession() {
         if session.isRunning {
             stopActiveWorkout(isRemoteCommand: false)
@@ -265,6 +314,10 @@ class StepTrackerViewModel: ObservableObject {
         }
     }
 
+    /// Attaches the finalised GPS route to the current session, then saves the session to
+    /// Firebase and syncs the daily step count.
+    ///
+    /// Called by `MapHUDView` after `LocationManager.stopRecordingWorkout()` returns the route.
     func attachRouteToSession(_ route: [RouteCoordinate]) {
         self.session.route = route
 
@@ -275,6 +328,11 @@ class StepTrackerViewModel: ObservableObject {
         }
     }
 
+    /// Awards points for an active workout using a pace-based multiplier:
+    ///  - Speed ≥ 2.5 m/s → 2× multiplier
+    ///  - Speed ≥ 1.5 m/s → 1.5× multiplier
+    ///  - Otherwise → 1× multiplier
+    /// Base formula: `floor(steps / 20) * multiplier`.
     private func awardActiveWorkoutPoints() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
 

@@ -10,13 +10,20 @@ import FirebaseDatabase
 import FirebaseAuth
 import Combine
 
+/// Handles fetching the shop item catalogue from Firebase, reading the user's
+/// current point balance, and processing item purchases.
 @MainActor
 class ShopViewModel: ObservableObject {
+    /// All shop items available for purchase, fetched from `shopItems` in Firebase.
     @Published var availableItems: [ShopItem] = []
+    /// The current user's point balance, kept in sync via a Firebase listener.
     @Published var userPoints: Int = 0
+    /// IDs of items the user already owns (used to show "Owned" badge in the shop).
     @Published var unlockedCustomizations: [String] = []
     
+    /// `true` while a purchase transaction is in-flight (prevents duplicate taps).
     @Published var isPurchasing: Bool = false
+    /// Set to a human-readable string if a purchase fails; displayed below the shop grid.
     @Published var errorMessage: String = ""
     
     private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
@@ -28,6 +35,8 @@ class ShopViewModel: ObservableObject {
         }
     }
     
+    /// Fetches all documents from the `shopItems` Firebase node and decodes them into
+    /// `ShopItem` objects. Replaces the entire `availableItems` array on success.
     func fetchShopItems() async {
         do {
             let snapshot = try await dbRef.child("shopItems").getData()
@@ -47,6 +56,8 @@ class ShopViewModel: ObservableObject {
         }
     }
     
+    /// Attaches a persistent Firebase listener to the current user's node to keep
+    /// `userPoints` and `unlockedCustomizations` up-to-date in real time.
     func fetchUserData() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
@@ -61,6 +72,11 @@ class ShopViewModel: ObservableObject {
         }
     }
     
+    /// Attempts to purchase `item` for the current user.
+    ///
+    /// Validates that the user doesn't already own the item and has enough points,
+    /// then atomically deducts `item.cost` from the user's point balance and appends
+    /// `item.id` to their `unlockedCustomizations` list in Firebase.
     func purchaseItem(item: ShopItem) async {
         guard !unlockedCustomizations.contains(item.id) else {
             errorMessage = "You already own this item!"
@@ -82,6 +98,7 @@ class ShopViewModel: ObservableObject {
         do {
             let userRef = dbRef.child("users").child(userId)
             
+            // Atomically decrement the user's point balance.
             try await userRef.child("points").setValue(ServerValue.increment(NSNumber(value: -item.cost)))
             
             var updatedCustomizations = self.unlockedCustomizations

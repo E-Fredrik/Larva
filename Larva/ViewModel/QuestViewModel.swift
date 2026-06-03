@@ -9,11 +9,21 @@ import Combine
 import FirebaseDatabase
 import Foundation
 
+/// Manages the user's daily quest list and automatically awards rewards
+/// when a quest's target is reached.
+///
+/// Currently the quest list is hardcoded (5k and 10k step goals). Progress is
+/// driven by a live Firebase listener on `users/<uid>/dailySteps` so the view
+/// updates in real time as the user walks.
 @MainActor
 class QuestViewModel: ObservableObject {
+    /// The active set of daily quests shown in `QuestsView`.
     @Published var dailyQuests: [Quest] = []
+    /// A copy of the current user profile, used to read streak and sync rewards.
     @Published var currentUser: User
 
+    /// IDs of quests whose rewards have already been claimed in this session.
+    /// Prevents the same quest from awarding points more than once.
     @Published var claimedQuestIDs: Set<String> = []
     private let dbRef = Database.database(url: "https://larvva-d2753-default-rtdb.asia-southeast1.firebasedatabase.app").reference()
     init(currentUser: User) {
@@ -22,6 +32,8 @@ class QuestViewModel: ObservableObject {
         listenToDailySteps()
     }
 
+    /// Populates `dailyQuests` with the fixed set of step-based daily goals.
+    /// In a future version this could be fetched from Firebase to allow remote configuration.
     private func loadDailyQuests() {
         dailyQuests = [
             Quest(
@@ -41,6 +53,9 @@ class QuestViewModel: ObservableObject {
         ]
     }
     
+    /// Attaches a real-time Firebase listener to the user's `dailySteps` field.
+    /// Whenever the step count changes (e.g. synced by `StepTrackerViewModel`),
+    /// `updateStepProgress` is called to advance quest progress and trigger auto-claims.
     private func listenToDailySteps() {
         dbRef.child("users").child(currentUser.id).child("dailySteps").observe(.value) { [weak self] snapshot in
             let steps = snapshot.value as? Int ?? 0
@@ -50,6 +65,9 @@ class QuestViewModel: ObservableObject {
         }
     }
 
+    /// Updates each quest's `currentProgress` based on the current step count.
+    /// When a step quest is completed for the first time, `autoClaimReward` is triggered.
+    /// If `currentSteps` drops to 0 (midnight reset), all progress and claims are cleared.
     func updateStepProgress(currentSteps: Int) {
         if currentSteps == 0 {
             claimedQuestIDs.removeAll()
@@ -79,10 +97,13 @@ class QuestViewModel: ObservableObject {
         }
     }
 
+    /// Awards points for the completed quest and increments the streak if all quests are done.
+    /// Then persists the updated `currentUser` back to Firebase.
     private func autoClaimReward(for questID: String, at index: Int) {
         claimedQuestIDs.insert(questID)
         currentUser.points += dailyQuests[index].rewardPoints
         
+        // If all quests are now claimed, increment the user's streak.
         if claimedQuestIDs.count == dailyQuests.count {
             currentUser.currentStreak += 1
         }

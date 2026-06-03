@@ -7,10 +7,17 @@
 
 import SwiftUI
 
+/// The cosmetic item shop where users spend points to unlock app themes and avatar borders.
+///
+/// A segmented picker at the top filters items by category (`appTheme` or `avatarBorder`).
+/// Each `ShopItemCard` receives owned/affordable state computed here from `ShopViewModel`,
+/// and an overlay spinner covers the whole screen while a purchase is being processed.
 struct ShopView: View {
     @ObservedObject var viewModel: ShopViewModel
+    /// Tracks the currently displayed category tab.
     @State private var selectedCategory: ShopItem.ItemType = .appTheme
 
+    /// Returns only the items that match the currently selected category tab.
     var filteredItems: [ShopItem] {
         return viewModel.availableItems.filter { $0.itemType == selectedCategory }
     }

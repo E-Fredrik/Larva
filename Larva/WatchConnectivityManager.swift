@@ -9,11 +9,26 @@ import Combine
 import Foundation
 import WatchConnectivity
 
+/// Singleton that manages two-way communication between the iOS app and the Apple Watch
+/// companion app using `WatchConnectivity`.
+///
+/// Two types of data are exchanged:
+///  1. **Workout state** (`workoutState: Bool`): Sent via real-time messages when the watch
+///     is reachable, or via `applicationContext` when it isn't. This allows either device
+///     to start/stop a workout and have the other reflect the change immediately.
+///
+///  2. **Completed workout** (`workoutPayload: Data`): Sent via `transferUserInfo` (guaranteed
+///     delivery) when the Watch ends a session, so the iPhone can save the route to Firebase.
 class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
+    /// Shared singleton – created once in `LarvaApp.onAppear` to activate the session early.
     static let shared = WatchConnectivityManager()
 
+    /// Set when the Watch sends a completed `WorkoutData` payload to the iPhone.
+    /// Observed by `StepTrackerViewModel` to save the route to Firebase.
     @Published var completedWatchWorkout: WorkoutData?
     
+    /// The latest workout-running state received from the remote device.
+    /// `true` = workout started remotely, `false` = workout stopped remotely, `nil` = no message yet.
     @Published var remoteWorkoutState: Bool? = nil
 
     private override init() {
@@ -24,7 +39,9 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
-    // Sends live state to the phone
+    /// Sends the current workout running state to the paired device.
+    /// Prefers real-time `sendMessage` when the counterpart is reachable;
+    /// falls back to `updateApplicationContext` (queued delivery) when it isn't.
     func sendWorkoutState(isRunning: Bool) {
         guard WCSession.isSupported() else { return }
         let payload = ["workoutState": isRunning]
@@ -45,6 +62,8 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
 
+    /// Encodes `workout` as JSON and sends it to the iPhone via `transferUserInfo`,
+    /// which guarantees delivery even if the phone is not currently reachable.
     func sendWorkoutToPhone(_ workout: WorkoutData) {
         guard WCSession.isSupported() else { return }
         do {
@@ -56,14 +75,18 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
+    /// Called when a real-time message arrives (watch is reachable and awake).
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         handleStateMessage(message)
     }
     
+    /// Called when an `applicationContext` update arrives (counterpart was unreachable at send time).
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         handleStateMessage(applicationContext)
     }
     
+    /// Extracts the `workoutState` bool from a received message payload and publishes it
+    /// on the main thread so SwiftUI subscribers update without a manual `DispatchQueue` call.
     private func handleStateMessage(_ payload: [String: Any]) {
         if let workoutState = payload["workoutState"] as? Bool {
             DispatchQueue.main.async {
@@ -72,6 +95,8 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
 
+    /// Called when the iPhone receives a `transferUserInfo` delivery containing a
+    /// serialised `WorkoutData` blob. Decodes and publishes it on the main thread.
     func session(
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any] = [:]
@@ -92,6 +117,7 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
+    /// Required `WCSessionDelegate` method. Called when session activation completes.
     func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
@@ -99,7 +125,9 @@ class WatchConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     ) {}
     
     #if os(iOS)
+    /// iOS-only: called when the session transitions to inactive state (e.g. watch switched).
     func sessionDidBecomeInactive(_ session: WCSession) {}
+    /// iOS-only: called when the session fully deactivates. Re-activates to handle watch pairing changes.
     func sessionDidDeactivate(_ session: WCSession) {
         WCSession.default.activate()
     }

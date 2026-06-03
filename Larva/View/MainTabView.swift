@@ -8,6 +8,11 @@
 import Combine
 import SwiftUI
 
+/// The iPhone bottom-tab navigation container used when `horizontalSizeClass == .compact`.
+///
+/// Receives pre-built ViewModels from `AuthenticatedRootView` via `@ObservedObject`
+/// to avoid re-creating them on tab switches. `ProfileView` is the one tab that
+/// reads `profileVM` directly from the `@EnvironmentObject` provided by the parent.
 struct MainTabView: View {
     @ObservedObject var friendVM: FriendViewModel
     @ObservedObject var questVM: QuestViewModel

@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+/// Displays the user's current day streak and the list of daily quests.
+///
+/// Quest progress is driven by live Firebase updates inside `QuestViewModel`;
+/// this view just renders the streak header and a scrollable list of `QuestRow` cards.
 struct QuestsView: View {
     @ObservedObject var viewModel: QuestViewModel
 

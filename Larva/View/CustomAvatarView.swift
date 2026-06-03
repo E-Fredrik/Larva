@@ -7,8 +7,14 @@
 
 import SwiftUI
 
+/// A circular avatar that shows the first letter of the user's username.
+///
+/// If the user has an `avatarBorder` item equipped, `ProfileViewModel.getBorderColor(for:)`
+/// returns a `Color` which is drawn as a ring around the circle.
+/// Used wherever a user avatar is needed (profile, leaderboard, friend detail).
 struct CustomAvatarView: View {
     let user: User
+    /// Controls the diameter of the avatar circle. Defaults to 80 pt.
     var size: CGFloat = 80
     
     @EnvironmentObject var profileVM: ProfileViewModel

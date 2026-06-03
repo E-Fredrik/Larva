@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+/// The main user profile screen, displaying user stats, equipped items, and friend count.
+///
+/// Layout automatically adapts between iPhone (vertical scroll) and iPad (two-column split).
+/// Navigating to `SettingsView` or `CustomizationInventoryView` is handled via modal sheets.
 struct ProfileView: View {
     @EnvironmentObject var viewModel: ProfileViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -37,6 +41,7 @@ struct ProfileView: View {
         }
     }
 
+    /// Single-column layout for compact displays (iPhone).
     private var iPhoneLayout: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -50,6 +55,8 @@ struct ProfileView: View {
         }
     }
 
+    /// Two-column layout for regular displays (iPad).
+    /// Places stats and friends on the left, and the equipment inventory on the right.
     private var iPadLayout: some View {
         HStack(alignment: .top, spacing: 32) {
             ScrollView { VStack(spacing: 32) { heroSection; statsGrid; friendsBanner }.padding(.horizontal) }
@@ -118,6 +125,11 @@ struct ProfileView: View {
     }
 }
 
+/// A modal sheet displaying all shop items owned by the current user.
+///
+/// Items are grouped by category (Themes vs Borders). If an item is already equipped,
+/// it displays a red "Unequip" button; otherwise, it displays an "Equip" button tinted
+/// to the app's current accent colour. Both actions sync directly to Firebase via `ProfileViewModel`.
 struct CustomizationInventoryView: View {
     @EnvironmentObject var viewModel: ProfileViewModel
     @Environment(\.dismiss) var dismiss

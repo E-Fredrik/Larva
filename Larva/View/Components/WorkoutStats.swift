@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+/// A small metric display tile used inside `WorkoutControlPanel` to show a single
+/// real-time workout statistic (Steps, Distance, or Pace).
+///
+/// Uses a monospaced font for the value so that digits don't shift as numbers change.
 struct WorkoutStats: View {
     let title: String
     let value: String

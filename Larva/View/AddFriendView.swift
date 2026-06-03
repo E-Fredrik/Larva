@@ -5,6 +5,10 @@
 
 import SwiftUI
 
+/// A modal sheet for sending a friend request using a 6-character friend code.
+///
+/// The keyboard is explicitly dismissed before calling `sendFriendRequest(to:)` to avoid
+/// a race condition where the keyboard dismiss animation conflicts with the alert presentation.
 struct AddFriendView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: FriendViewModel

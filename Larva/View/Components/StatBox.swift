@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+/// A square stat tile used in the Profile screen to surface a single activity metric
+/// (e.g. daily steps, streak count) with an icon, numeric value, and label.
+/// Slightly larger than `StatCard` due to a `.title` icon size.
 struct StatBox: View {
     let title: String
     let value: String

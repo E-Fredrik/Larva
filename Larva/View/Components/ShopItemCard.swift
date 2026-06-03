@@ -7,14 +7,25 @@
 
 import SwiftUI
 
+/// A card in the shop grid representing a single purchasable cosmetic item.
+///
+/// Three display states are possible:
+///  - **Owned**: Shows a checkmark and a green "Owned" badge; purchase button is hidden.
+///  - **Affordable**: Shows a star-and-price purchase button in the app tint colour.
+///  - **Not affordable**: Shows the price in grey and disables the button.
+///
+/// `purchaseAction` is called by `ShopView` which delegates to `ShopViewModel.purchaseItem(_:)`.
 struct ShopItemCard: View {
     let item: ShopItem
+    /// Whether the current user already owns this item.
     let isOwned: Bool
+    /// Whether the user has enough points to buy this item (`userPoints >= item.cost`).
     let canAfford: Bool
     let purchaseAction: () -> Void
     
     @EnvironmentObject var profileVM: ProfileViewModel
     
+    /// Maps the item's `ItemType` to an SF Symbol icon shown in the card.
     private var iconName: String {
         switch item.itemType {
         case .appTheme: return "paintpalette.fill"

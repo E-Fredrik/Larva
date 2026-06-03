@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+/// A detailed profile screen for a specific user, pushed from the leaderboard.
+///
+/// If `user.id` matches the current logged-in user, this view acts as a "Your Stats" screen
+/// (hiding the "Remove Friend" button). Otherwise, it displays a friend's stats and
+/// provides the option to remove them.
 struct FriendProfileView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: FriendViewModel
@@ -14,6 +19,8 @@ struct FriendProfileView: View {
     
     let user: User
     
+    /// Ensures we always display the most up-to-date local data if the viewed profile
+    /// belongs to the current user (in case points/streak just changed).
     private var activeUser: User {
         user.id == profileVM.currentUser.id ? profileVM.currentUser : user
     }

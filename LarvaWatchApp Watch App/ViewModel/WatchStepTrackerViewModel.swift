@@ -11,20 +11,35 @@ import CoreMotion
 import Foundation
 import HealthKit
 
+/// The Watch app's step tracker and workout session manager.
+///
+/// Key design choices:
+///  - An `HKWorkoutSession` is started even though HealthKit data isn't used directly.
+///    This prevents watchOS from suspending the app in the background, which would stop
+///    `CMPedometer` and `CLLocationManager` from delivering updates.
+///  - A Combine subscription on `WatchConnectivityManager.remoteWorkoutState` enables
+///    the iPhone companion app to start or stop a workout on the Watch remotely.
+///  - GPS coordinates are appended to `session.route` in real time so they can be sent
+///    to the iPhone as part of the final `WorkoutData` payload.
 @MainActor
 class WatchStepTrackerViewModel: NSObject, ObservableObject,
     CLLocationManagerDelegate
 {
+    /// Live workout data updated continuously while a session is running.
     @Published var session: WorkoutData
+    /// Total steps counted since midnight (passive background accumulation).
     @Published var dailySteps: Int = 0
 
     private var cancellables = Set<AnyCancellable>()
 
     private let healthStore = HKHealthStore()
+    /// HKWorkoutSession keeps watchOS from suspending the app during a workout.
     private var workoutSession: HKWorkoutSession?
 
     private let pedometer = CMPedometer()
     private let locationManager = CLLocationManager()
+    /// The passive step count captured just before a workout started,
+    /// used to compute the running `dailySteps` total during an active session.
     private var dailyBaselineBeforeWorkout: Int = 0
 
     override init() {
@@ -42,6 +57,8 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         //        locationManager.allowsBackgroundLocationUpdates = true
 
+        // Subscribe to remote workout state changes from the iPhone.
+        // If the phone starts a workout, start one here too (and vice versa).
         WatchConnectivityManager.shared.$remoteWorkoutState
             .compactMap({ $0 })
             .receive(on: RunLoop.main)
@@ -58,6 +75,8 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
             }.store(in: &cancellables)
     }
 
+    /// Requests HealthKit authorisation to share workouts (which keeps the app alive in the
+    /// background) and to read step counts. Then enables background location on success.
     func requestPermissions() {
         let typesToShare: Set = [HKObjectType.workoutType()]
         let typesToRead: Set = [
@@ -75,6 +94,9 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
         }
     }
 
+    /// Toggles between starting and stopping a workout session.
+    /// `isRemoteCommand: true` is passed to prevent sending a redundant connectivity
+    /// message back to the device that issued the command.
     func toggleWorkout() {
         if session.isRunning {
             stopActiveWorkout(isRemoteCommand: true)
@@ -88,7 +110,8 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
             guard CMPedometer.isStepCountingAvailable() else { return }
         #endif
 
-        // Init health kit so that apple watch does not suspend the app (making it stop working in the background)
+        // Start an HKWorkoutSession so watchOS does not suspend this app
+        // while running in the background during a workout.
         let config = HKWorkoutConfiguration()
         config.activityType = .running
         config.locationType = .outdoor
@@ -104,7 +127,8 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
 
         }
 
-        // Update pedometer based on the session data
+        // Snapshot the current daily step count as the baseline so that
+        // active steps are counted from zero, not from today's total.
         dailyBaselineBeforeWorkout = dailySteps
         session = WorkoutData(
             steps: 0,
@@ -115,6 +139,7 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
             route: []
         )
         
+        // Only notify the iPhone if this start was triggered locally on the Watch.
         if !isRemoteCommand {
             WatchConnectivityManager.shared.sendWorkoutState(isRunning: true)
         }
@@ -141,16 +166,19 @@ class WatchStepTrackerViewModel: NSObject, ObservableObject,
         pedometer.stopUpdates()
         session.isRunning = false
         
+        // Only notify the iPhone if this stop was triggered locally on the Watch.
         if !isRemoteCommand {
             WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
         }
 
+        // Always send the full workout payload so the iPhone can persist the route.
         WatchConnectivityManager.shared.sendWorkoutState(isRunning: false)
         WatchConnectivityManager.shared.sendWorkoutToPhone(self.session)
 
     }
 
-    //Using nonisolated here to avoid blocking the main thread with constant location updates, since the location manager can call this method very frequently and we don't want to risk UI freezes.
+    /// Receives location updates off the main thread (`nonisolated`) to avoid UI freezes.
+    /// Appends each coordinate to `session.route` only while a workout is running.
     nonisolated func locationManager(
         _ manager: CLLocationManager,
         didUpdateLocations locations: [CLLocation]

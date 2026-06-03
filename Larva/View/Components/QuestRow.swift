@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+/// Renders a single quest card in the `QuestsView` list.
+///
+/// Shows the quest title, reward star badge, a GeometryReader-based progress bar
+/// proportional to `quest.currentProgress / quest.targetGoal`, and a checkmark
+/// when the quest is completed. Progress bar colour switches from orange to mint on completion.
 struct QuestRow: View {
     let quest: Quest
     

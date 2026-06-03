@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+/// The account creation screen navigated to from `LoginView`.
+///
+/// Calls `AuthViewModel.signUp(email:password:username:)` to create a Firebase Auth
+/// account and write the initial user profile to the Realtime Database.
+/// Uses a custom back button because `navigationBarBackButtonHidden(true)` hides the
+/// system one (to prevent accidental back-swipes mid-registration).
 struct SignUpView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) var dismiss

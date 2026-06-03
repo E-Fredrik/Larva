@@ -9,11 +9,23 @@ import Combine
 import MapKit
 import SwiftUI
 
+/// The primary map screen of the app, combining interactive MapKit with workout tracking.
+///
+/// Layers three overlapping concerns:
+///  1. **Map**: A full-screen `Map` with user location annotation, waypoint annotations,
+///     a blue navigation polyline (from MapKit Directions), and an orange workout route polyline.
+///  2. **HUD**: A `DailyStepsCard` at the top and a `WorkoutControlPanel` at the bottom
+///     that float over the map to display stats and controls.
+///  3. **Coordination**: An `onChange` observer syncs workout state changes between
+///     `StepTrackerViewModel` (manages the session) and `LocationManager` (records the GPS route).
 struct MapHUDView: View {
+    /// Owns the GPS, waypoint, and routing logic for this screen.
     @StateObject private var locationManager = LocationManager()
+    /// Owns the step count, workout session, and Firebase sync logic.
     @StateObject private var stepTracker = StepTrackerViewModel()
     @EnvironmentObject var profileVM: ProfileViewModel
 
+    /// Camera position bound to the user's real-time location; falls back to automatic if unavailable.
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
 
     var body: some View {
@@ -22,21 +34,27 @@ struct MapHUDView: View {
                 Map(position: $position) {
                     UserAnnotation()
 
+                    // Blue polyline: walking route calculated by MapKit Directions.
                     if let route = locationManager.route {
                         MapPolyline(route).stroke(.blue, lineWidth: 5)
                     }
 
+                    // Orange polyline: GPS route recorded during the active workout.
                     if !locationManager.workoutRoute.isEmpty {
                         MapPolyline(coordinates: locationManager.workoutRoute)
                             .stroke(.orange, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
                     }
 
+                    // Red pin placed at the navigation destination selected by the user.
                     if let destCoord = locationManager.destinationCoordinate {
                         Annotation("Destination", coordinate: destCoord) {
                             Image(systemName: "mappin.circle.fill").font(.title).foregroundColor(.red).background(Circle().fill(.white))
                         }
                     }
 
+                    // Tinted dot annotations for each unclaimed waypoint in the database.
+                    // Claimed waypoints are hidden to reduce clutter.
+                    // Tapping a waypoint calculates a walking route to it.
                     ForEach(locationManager.waypoints) { waypoint in
                         Annotation(waypoint.name, coordinate: waypoint.coordinate) {
                             if !waypoint.isClaimed {
@@ -60,6 +78,7 @@ struct MapHUDView: View {
                         }
                     }
                 }
+                // Allow tapping anywhere on the map to navigate to that point.
                 .onTapGesture { tapLocation in
                     if let coordinate = proxy.convert(tapLocation, from: .local) {
                         locationManager.calculateWalkingRoute(to: coordinate)
@@ -96,6 +115,8 @@ struct MapHUDView: View {
                 .padding(.bottom, 24)
             }
         }
+        // When the workout session starts or stops, synchronise with LocationManager.
+        // On stop: finalise the GPS route and attach it to the session for Firebase upload.
         .onChange(of: stepTracker.session.isRunning) { oldValue, isRunning in
             if isRunning { locationManager.startRecordingWorkout() } else {
                 locationManager.stopRecordingWorkout()
@@ -104,9 +125,11 @@ struct MapHUDView: View {
             }
         }
         .onAppear {
+            // Start the continuous background step counter and load the user's daily target.
             stepTracker.startPassiveTracking()
             Task { await stepTracker.fetchUserDailyTarget() }
         }
+        // Alert shown when MapKit Directions cannot find a walking route.
         .alert("Route Unavailable", isPresented: $locationManager.showRoutingError) {
             Button("OK", role: .cancel) { }
         } message: {

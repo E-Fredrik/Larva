@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+/// iPad navigation container using a `NavigationSplitView` with a persistent sidebar list.
+///
+/// Used by `AuthenticatedRootView` when `horizontalSizeClass == .regular`.
+/// The sidebar shows navigation links; the detail pane swaps between feature views
+/// based on `selectedTab`. `ProfileView` is excluded from the sidebar
+/// (it can be accessed via the tab bar on iPhone only).
 struct SidebarNavigationView: View {
     @ObservedObject var friendVM: FriendViewModel
     @ObservedObject var questVM: QuestViewModel
@@ -14,6 +20,7 @@ struct SidebarNavigationView: View {
 
     @State private var selectedTab: NavigationTab? = .map
 
+    /// The set of destinations reachable from the iPad sidebar.
     enum NavigationTab {
         case map, quests, shop, friends
     }
