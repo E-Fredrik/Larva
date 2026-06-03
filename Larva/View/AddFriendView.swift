@@ -1,8 +1,6 @@
 //
 //  AddFriendView.swift
-//  LarvaDep
-//
-//  Created by Eko Nur Cahyo S on 27/05/26.
+//  Larva
 //
 
 import SwiftUI
@@ -21,15 +19,36 @@ struct AddFriendView: View {
                 TextField("Code (e.g. ABC123)", text: $friendCode)
                     .textFieldStyle(.roundedBorder)
                     .autocapitalization(.allCharacters)
+                    .disableAutocorrection(true)
                     .padding(.horizontal, 32)
                 
                 Button(action: {
-                    Task { await viewModel.sendFriendRequest(to: friendCode) }
+                    // 1. FORCE KEYBOARD TO CLOSE IMMEDIATELY
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    
+                    // 2. WAIT 0.3s for the keyboard to vanish before hitting Firebase
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        viewModel.sendFriendRequest(to: friendCode) // No longer needs 'await'
+                    }
                 }) {
-                    Text("Send Request")
-                        .foregroundColor(.white).padding().frame(maxWidth: .infinity)
-                        .background(Color.mint).cornerRadius(12).padding(.horizontal, 32)
+                    HStack {
+                        if viewModel.isProcessing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .padding(.trailing, 8)
+                        }
+                        Text(viewModel.isProcessing ? "Processing..." : "Send Request")
+                            .fontWeight(.bold)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(friendCode.isEmpty || viewModel.isProcessing ? Color.gray : Color.mint)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 32)
                 }
+                .disabled(friendCode.isEmpty || viewModel.isProcessing)
+                
                 Spacer()
             }
             .padding(.top, 40)
@@ -37,7 +56,7 @@ struct AddFriendView: View {
             .navigationBarTitleDisplayMode(.inline)
             .alert("Friend Request", isPresented: $viewModel.showAlert) {
                 Button("OK", role: .cancel) {
-                    if viewModel.alertMessage.contains("successfully") {
+                    if viewModel.alertMessage.contains("successfully") || viewModel.alertMessage.contains("sent to") {
                         dismiss()
                     }
                 }

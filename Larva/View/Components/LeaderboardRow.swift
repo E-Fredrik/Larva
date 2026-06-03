@@ -13,11 +13,6 @@ struct LeaderboardRow: View {
     let metric: LeaderboardMetric
     let timeframe: LeaderboardTimeframe
     let isCurrentUser: Bool
-    @EnvironmentObject var profileVM: ProfileViewModel
-
-    private var activeUser: User {
-        isCurrentUser ? profileVM.currentUser : user
-    }
 
     private var rankColor: Color {
         switch rank {
@@ -31,15 +26,20 @@ struct LeaderboardRow: View {
     private var displayValue: String {
         switch metric {
         case .streaks:
-            return "\(activeUser.currentStreak) Days"
+            return "\(user.currentStreak) Days"
         case .steps:
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
+            // FIX: Using renamed calculation function
             return formatter.string(
-                from: NSNumber(value: activeUser.actualSteps(for: timeframe))
+                from: NSNumber(value: user.actualSteps(for: timeframe))
             ) ?? "0"
         case .distance:
-            return String(format: "%.1f km", activeUser.actualDistance(for: timeframe))
+            // FIX: Using renamed calculation function
+            return String(
+                format: "%.1f km",
+                user.actualDistance(for: timeframe)
+            )
         }
     }
 
@@ -65,10 +65,20 @@ struct LeaderboardRow: View {
             }
             .frame(width: 40)
 
-            CustomAvatarView(user: activeUser, size: 48)
+            Circle()
+                .fill(Color.mint.opacity(0.2))
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Text(String(user.username.prefix(1)).uppercased())
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.mint)
+                )
+                .overlay(
+                    Circle().stroke(isCurrentUser ? Color.yellow : Color.clear, lineWidth: 2)
+                )
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(activeUser.username)
+                Text(user.username)
                     .font(.headline)
                     .foregroundColor(isCurrentUser ? .primary : .primary)
 
@@ -76,10 +86,10 @@ struct LeaderboardRow: View {
                     Text("You")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(profileVM.currentAppTint)
+                        .foregroundColor(.mint)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(profileVM.currentAppTint.opacity(0.2))
+                        .background(Color.mint.opacity(0.2))
                         .cornerRadius(4)
                 }
             }
@@ -90,7 +100,7 @@ struct LeaderboardRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: metricIcon)
                         .font(.caption)
-                        .foregroundColor(metric == .streaks ? .orange : profileVM.currentAppTint)
+                        .foregroundColor(metric == .streaks ? .orange : .mint)
 
                     Text(displayValue)
                         .font(.subheadline)
@@ -101,18 +111,10 @@ struct LeaderboardRow: View {
         .padding(16)
         .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(20)
-        .shadow(
-            color: Color.black.opacity(isCurrentUser ? 0.08 : 0.03),
-            radius: 8,
-            x: 0,
-            y: 4
-        )
+        .shadow(color: Color.black.opacity(isCurrentUser ? 0.08 : 0.03), radius: 8, x: 0, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(
-                    isCurrentUser ? Color.yellow.opacity(0.6) : Color.clear,
-                    lineWidth: 2
-                )
+                .stroke(isCurrentUser ? Color.yellow.opacity(0.6) : Color.clear, lineWidth: 2)
         )
     }
 }
