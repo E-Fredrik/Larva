@@ -26,7 +26,6 @@ class FriendViewModel: ObservableObject {
     @Published var selectedMetric: LeaderboardMetric = .streaks
     @Published var selectedTimeframe: LeaderboardTimeframe = .weekly
     
-    // UI Feedback State
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
     @Published var isProcessing: Bool = false
@@ -50,7 +49,6 @@ class FriendViewModel: ObservableObject {
         listenForFriendUpdates()
     }
     
-    // MARK: - SAFE DECODER FIX
     private func safeDecodeUser(from dict: [String: Any], key: String) -> User? {
         var safeDict = dict
         if safeDict["id"] == nil { safeDict["id"] = key }
@@ -106,7 +104,6 @@ class FriendViewModel: ObservableObject {
         self.pendingRequests = fetchedRequests
     }
 
-    // MARK: - THE STABLE FIREBASE FIX
     func sendFriendRequest(to code: String) {
         self.isProcessing = true
         
@@ -125,7 +122,6 @@ class FriendViewModel: ObservableObject {
         
         let query = dbRef.child("users").queryOrdered(byChild: "friendCode").queryEqual(toValue: cleanCode)
         
-        // Uses the bulletproof callback method instead of async/await
         query.observeSingleEvent(of: .value, with: { [weak self] snapshot in
             guard let self = self else { return }
             
@@ -167,7 +163,6 @@ class FriendViewModel: ObservableObject {
                 }
             }
         }) { [weak self] error in
-            // If this fires, you have a Security Rules issue!
             self?.alertMessage = "Permission Denied: \(error.localizedDescription)"
             self?.showAlert = true
             self?.isProcessing = false
@@ -175,13 +170,20 @@ class FriendViewModel: ObservableObject {
     }
 
     func acceptRequest(from user: User) {
-        if !currentUser.friendList.contains(user.id) { currentUser.friendList.append(user.id); friends.append(user) }
+        if !currentUser.friendList.contains(user.id) {
+            currentUser.friendList.append(user.id)
+            friends.append(user)
+        }
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
         pendingRequests.removeAll { $0.id == user.id }
         
+        let updates: [String: Any] = [
+            "users/\(currentUser.id)/friendList": currentUser.friendList,
+            "users/\(currentUser.id)/pendingFriendRequests": currentUser.pendingFriendRequests
+        ]
+        
         Task {
-            try? await dbRef.child("users").child(currentUser.id).child("friendList").setValue(currentUser.friendList)
-            try? await dbRef.child("users").child(currentUser.id).child("pendingFriendRequests").setValue(currentUser.pendingFriendRequests)
+            try? await dbRef.updateChildValues(updates)
             
             var targetFriendList = user.friendList
             if !targetFriendList.contains(currentUser.id) {
@@ -192,14 +194,19 @@ class FriendViewModel: ObservableObject {
     }
 
     func declineRequest(from user: User) {
+        // Optimistic UI Update
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
         pendingRequests.removeAll { $0.id == user.id }
-        Task { try? await dbRef.child("users").child(currentUser.id).child("pendingFriendRequests").setValue(currentUser.pendingFriendRequests) }
+        
+        Task {
+            try? await dbRef.child("users").child(currentUser.id).child("pendingFriendRequests").setValue(currentUser.pendingFriendRequests)
+        }
     }
     
     func removeFriend(_ user: User) {
         currentUser.friendList.removeAll { $0 == user.id }
         friends.removeAll { $0.id == user.id }
+        
         Task {
             try? await dbRef.child("users").child(currentUser.id).child("friendList").setValue(currentUser.friendList)
             var targetFriendList = user.friendList
