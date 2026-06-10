@@ -29,7 +29,9 @@ struct FirebaseStepTrackerDatabase: StepTrackerDatabaseService {
     private let dbRef = Database.database().reference()
 
     func fetchDailyTarget(userId: String) async throws -> Int? {
-        let snapshot = try await dbRef.child("users").child(userId).child("dailyStepTarget").getData()
+        let snapshot = try await dbRef.child("users").child(userId).child(
+            "dailyStepTarget"
+        ).getData()
         return snapshot.value as? Int
     }
 
@@ -78,18 +80,45 @@ class StepTrackerViewModel: ObservableObject {
     }
 
     private var lastTrackedDateString: String {
-        get { UserDefaults.standard.string(forKey: "\(currentUserId)_lastTrackedDateString") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastTrackedDateString") }
+        get {
+            UserDefaults.standard.string(
+                forKey: "\(currentUserId)_lastTrackedDateString"
+            ) ?? ""
+        }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: "\(currentUserId)_lastTrackedDateString"
+            )
+        }
     }
 
     private var lastRewardedPassiveSteps: Int {
-        get { UserDefaults.standard.integer(forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
-        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_lastRewardedPassiveSteps") }
+        get {
+            UserDefaults.standard.integer(
+                forKey: "\(currentUserId)_lastRewardedPassiveSteps"
+            )
+        }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: "\(currentUserId)_lastRewardedPassiveSteps"
+            )
+        }
     }
 
     private var hasRewardedDailyGoal: Bool {
-        get { UserDefaults.standard.bool(forKey: "\(currentUserId)_hasRewardedDailyGoal") }
-        set { UserDefaults.standard.set(newValue, forKey: "\(currentUserId)_hasRewardedDailyGoal") }
+        get {
+            UserDefaults.standard.bool(
+                forKey: "\(currentUserId)_hasRewardedDailyGoal"
+            )
+        }
+        set {
+            UserDefaults.standard.set(
+                newValue,
+                forKey: "\(currentUserId)_hasRewardedDailyGoal"
+            )
+        }
     }
 
     init() {
@@ -122,13 +151,37 @@ class StepTrackerViewModel: ObservableObject {
                     }
                 }
             }.store(in: &cancellables)
+
+        WatchConnectivityManager.shared.$completedWatchWorkout
+            .compactMap({ $0 })
+            .receive(on: RunLoop.main)
+            .sink { [weak self] watchWorkout in
+                Task {
+                    await self?.saveWatchWorkoutToFirebase(watchWorkout)
+                }
+            }.store(in: &cancellables)
     }
-    
+
+    // NEW: Function to save the payload arriving from the watch
+    private func saveWatchWorkoutToFirebase(_ workout: WorkoutData) async {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        let sessionId = "SESSION-\(UUID().uuidString.prefix(8))"
+        do {
+            try dbRef.child("users").child(userId).child("workoutHistory")
+                .child(sessionId).setValue(from: workout)
+            print("Successfully saved Apple Watch workout to Firebase!")
+        } catch {
+            print(
+                "Failed to save Apple Watch workout: \(error.localizedDescription)"
+            )
+        }
+    }
+
     private func checkAndResetNewDay() -> Bool {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let currentDateString = formatter.string(from: Date())
-        
+
         if lastTrackedDateString != currentDateString {
             lastRewardedPassiveSteps = 0
             hasRewardedDailyGoal = false
@@ -142,7 +195,9 @@ class StepTrackerViewModel: ObservableObject {
     func fetchUserDailyTarget() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         do {
-            let snapshot = try await dbRef.child("users").child(userId).child("dailyStepTarget").getData()
+            let snapshot = try await dbRef.child("users").child(userId).child(
+                "dailyStepTarget"
+            ).getData()
             if let target = snapshot.value as? Int {
                 self.dailyTarget = target
             } else {
@@ -303,7 +358,9 @@ class StepTrackerViewModel: ObservableObject {
                 )
             print("Awarded \(totalActivePoints) Active Points!")
         } catch {
-            print("Failed to award active points: \(error.localizedDescription)")
+            print(
+                "Failed to award active points: \(error.localizedDescription)"
+            )
         }
     }
 
@@ -315,7 +372,8 @@ class StepTrackerViewModel: ObservableObject {
             ? "SESSION-\(UUID().uuidString.prefix(8))" : self.currentSessionId
 
         do {
-            try dbRef.child("users").child(userId).child("workoutHistory").child(sessionId).setValue(from: session)
+            try dbRef.child("users").child(userId).child("workoutHistory")
+                .child(sessionId).setValue(from: session)
         } catch {
             print("Failed to save workout: \(error.localizedDescription)")
         }
@@ -325,9 +383,12 @@ class StepTrackerViewModel: ObservableObject {
         guard let userId = Auth.auth().currentUser?.uid else { return }
 
         do {
-            try await dbRef.child("users").child(userId).child("dailySteps").setValue(self.dailySteps)
+            try await dbRef.child("users").child(userId).child("dailySteps")
+                .setValue(self.dailySteps)
         } catch {
-            print("Failed to sync raw daily steps to Firebase: \(error.localizedDescription)")
+            print(
+                "Failed to sync raw daily steps to Firebase: \(error.localizedDescription)"
+            )
         }
 
         let unrewardedSteps = self.dailySteps - self.lastRewardedPassiveSteps
@@ -350,7 +411,9 @@ class StepTrackerViewModel: ObservableObject {
 
                 self.lastRewardedPassiveSteps += (pointsToAward * 100)
             } catch {
-                print("Failed to sync passive points: \(error.localizedDescription)")
+                print(
+                    "Failed to sync passive points: \(error.localizedDescription)"
+                )
             }
         }
 
@@ -366,9 +429,31 @@ class StepTrackerViewModel: ObservableObject {
         )
 
         do {
-            try dbRef.child("users").child(userId).child("dailyActivity").child(dateString).setValue(from: activity)
+            try dbRef.child("users").child(userId).child("dailyActivity").child(
+                dateString
+            ).setValue(from: activity)
         } catch {
             print("Failed to sync daily steps: \(error.localizedDescription)")
         }
     }
 }
+
+#if DEBUG
+    extension StepTrackerViewModel {
+        func test_setTarget(_ target: Int) {
+            self.dailyTarget = target
+        }
+
+        func test_injectMetrics(
+            passiveSteps: Int,
+            activeSteps: Int,
+            distance: Double,
+            pace: Double
+        ) {
+            self.dailySteps = passiveSteps + activeSteps
+            self.session.steps = activeSteps
+            self.session.distanceInMeters = distance
+            self.session.currentPace = pace
+        }
+    }
+#endif

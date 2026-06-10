@@ -194,7 +194,6 @@ class FriendViewModel: ObservableObject {
     }
 
     func declineRequest(from user: User) {
-        // Optimistic UI Update
         currentUser.pendingFriendRequests.removeAll { $0 == user.id }
         pendingRequests.removeAll { $0.id == user.id }
         

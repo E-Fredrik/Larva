@@ -12,10 +12,13 @@ struct SidebarNavigationView: View {
     @ObservedObject var questVM: QuestViewModel
     @ObservedObject var shopVM: ShopViewModel
 
+    // NEW: Add HistoryViewModel
+    @ObservedObject var historyVM: HistoryViewModel
+
     @State private var selectedTab: NavigationTab? = .map
 
     enum NavigationTab {
-        case map, quests, shop, friends
+        case map, history, quests, shop, friends  // Added history to enum
     }
 
     var body: some View {
@@ -25,6 +28,12 @@ struct SidebarNavigationView: View {
                     NavigationLink(value: NavigationTab.map) {
                         Label("Map & HUD", systemImage: "map")
                     }
+
+                    // NEW: Sidebar Link
+                    NavigationLink(value: NavigationTab.history) {
+                        Label("History", systemImage: "clock.arrow.circlepath")
+                    }
+
                     NavigationLink(value: NavigationTab.quests) {
                         Label("Quests", systemImage: "flame")
                     }
@@ -40,6 +49,8 @@ struct SidebarNavigationView: View {
                 switch selectedTab {
                 case .map:
                     MapHUDView()
+                case .history:
+                    HistoryView(viewModel: historyVM)
                 case .quests:
                     QuestsView(viewModel: questVM)
                 case .shop:
